@@ -38,6 +38,16 @@ InAppNotifications.opened.addListener(() {
 });
 ```
 
+## Setup
+
+1. [App setup](doc/app_setup.md): the dependencies, the three delegates (FCM, flutter_local_notifications, Firestore),
+   `setup`, `start` and `clear`, the permission, opening the right page, the in-app banner, and notifications made on
+   the phone.
+2. [Android setup](doc/android_setup.md): Firebase, desugaring, the manifest (permissions, the scheduled-notification
+   receivers, the default channel and icon), and how Android behaves when testing.
+3. [iOS setup](doc/ios_setup.md): the APNs key in Firebase, Push Notifications and Background Modes, the AppDelegate,
+   which plugins not to add, and testing on a simulator.
+
 ## How it works
 
 - **Token**: asked at `start`, saved through `TokenStoreDelegate.save` only when it differs from the copy last saved on

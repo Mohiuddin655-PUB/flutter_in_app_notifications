@@ -1,3 +1,8 @@
+## 0.6.1
+
+- **Setup guides**: `doc/app_setup.md` (the delegates and everything the app wires up), `doc/android_setup.md` and
+  `doc/ios_setup.md` (the platform setup and how each behaves when testing), linked from the README.
+
 ## 0.6.0
 
 - **Notifications made on the phone**: `InAppNotifications.notify(id:, title:, body:, data:, at:)` shows one in the
