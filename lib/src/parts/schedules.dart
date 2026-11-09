@@ -5,9 +5,9 @@ import '../delegates/notification_display_delegate.dart';
 import '../delegates/schedule_store_delegate.dart';
 import '../models/push_message.dart';
 
-/// The notifications scheduled on the phone. While the app is open they wait on timers here, and the phone's own
-/// alarms are taken away, so their time shows them inside the app ([_due]); once it is hidden they go back to the
-/// phone, which shows them even when the app is closed. Kept in [_store] between launches.
+/// The notifications scheduled on the phone. While the app is in front they wait on timers here, and the phone's own
+/// alarms are taken away, so their time shows them inside the app ([_due]); once it leaves the front (the app switcher
+/// too) they go back to the phone, which shows them even when the app is closed. Kept in [_store] between launches.
 class Schedules {
   Schedules(this._display, this._store, this._now, this._run, this._due);
 

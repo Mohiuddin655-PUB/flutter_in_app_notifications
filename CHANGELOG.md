@@ -1,3 +1,9 @@
+## 0.8.4
+
+- **A schedule survives the app being swiped away**: it goes back to the phone's alarm as soon as the app leaves the
+  front (inactive: the app switcher, the notification shade), not only once hidden. An app swiped away from the
+  switcher is never hidden first, so a schedule waiting on a timer was lost.
+
 ## 0.8.3
 
 - **iOS**: the plugins still hear of a notification while the app is open (Firebase Messaging's `onMessage` comes from

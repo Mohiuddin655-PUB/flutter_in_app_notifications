@@ -139,13 +139,16 @@ class _Kit {
     display.tapped.listen(open);
     await run(() async => open((await messaging.initial())?.data), 'initial push');
     await run(() async => open(await display.initial()), 'initial shown push');
-    // The app on screen or not, for schedules and for where a notification shows.
+    // The app in front or not, for schedules and for where a notification shows. Not in front starts at inactive (the
+    // app switcher, the notification shade), not hidden: an app swiped away from the switcher is never hidden first, so
+    // a schedule left on a timer here would be lost.
     AppLifecycleListener(
-      onShow: () {
+      onResume: () {
         _onScreen = true;
         unawaited(run(schedules.shown, 'shown'));
       },
-      onHide: () {
+      onInactive: () {
+        if (!_onScreen) return;
         _onScreen = false;
         unawaited(run(schedules.hidden, 'hidden'));
       },
