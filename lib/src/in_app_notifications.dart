@@ -91,11 +91,13 @@ class InAppNotifications {
 
   /// [message] in the app's banner (`InAppNotificationGate`), with nothing in the notification bar and no push: a
   /// message the app tells itself (a saved change, a match found). Works without [setup]. Its actions and a tap work as
-  /// any other's. [id], [title], [body] and [data] are the short way for a plain one.
-  static void show({String? id, String? title, String? body, Map<String, String> data = const {}, PushMessage? message}) {
+  /// any other's. [id], [title], [body] and [data] are the short way for a plain one. [look] names how it shows, from
+  /// `InAppNotificationGate.looks` ('toast', 'snackbar', 'popup' or the app's own); the gate's own look when null.
+  static void show({String? id, String? title, String? body, Map<String, String> data = const {}, PushMessage? message, String? look}) {
     assert(message != null || id != null || title != null, 'show needs a message, an id or a title');
+    final shown = message ?? PushMessage(id: id ?? 'banner-${title.hashCode}', title: title, body: body, data: data);
     _b.releaseAll();
-    _b.inApp.value = message ?? PushMessage(id: id ?? 'banner-${title.hashCode}', title: title, body: body, data: data);
+    _b.inApp.value = look == null ? shown : shown.copyWith(look: look);
   }
 
   /// What each kind of message offers (its actions), for the banner without [setup]; [setup]'s `categories` set them

@@ -4,8 +4,9 @@ import 'package:flutter/widgets.dart';
 
 import '../in_app_notifications.dart';
 import '../enums/banner_edge.dart';
-import 'in_app_notification_motion.dart';
 import '../models/push_message.dart';
+import 'in_app_notification_look.dart';
+import 'in_app_notification_motion.dart';
 
 /// What shows for a push [message] inside the app: [onOpen] when it is tapped, [onDismiss] when it is swiped away.
 typedef InAppNotificationBuilder = Widget Function(BuildContext context, PushMessage message, VoidCallback onOpen, VoidCallback onDismiss);
@@ -16,6 +17,8 @@ typedef InAppNotificationBuilder = Widget Function(BuildContext context, PushMes
 /// replaces the one showing, and it goes by itself after [showFor]. A tap opens its data (`InAppNotifications.open`).
 /// It comes and goes through [transitionBuilder] ([enter] as it comes, [exit] as it goes, kept on screen until it has
 /// gone); with animations turned off on the phone, at once. It draws nothing of its own: the app gives the look.
+/// The same banner shows other ways by name, from [looks] (a toast, a snackbar, a popup): a message naming one
+/// (`show(look: 'toast')`, a push's `look` in its data) shows that way, each value the look leaves out the gate's own.
 class InAppNotificationGate extends StatefulWidget {
   const InAppNotificationGate({
     super.key,
@@ -27,6 +30,7 @@ class InAppNotificationGate extends StatefulWidget {
     this.showFor = const Duration(seconds: 4),
     this.enter = const Duration(milliseconds: 460),
     this.exit = const Duration(milliseconds: 240),
+    this.looks = const {},
   });
 
   final InAppNotificationBuilder builder;
@@ -42,6 +46,9 @@ class InAppNotificationGate extends StatefulWidget {
   final Duration showFor;
   final Duration enter;
   final Duration exit;
+
+  /// Other ways it shows, by name (`{'toast': BannerLook.toast(), 'popup': BannerLook.popup()}`).
+  final Map<String, BannerLook> looks;
   final Widget child;
 
   @override
@@ -62,10 +69,15 @@ class _InAppNotificationGateState extends State<InAppNotificationGate> {
   void _changed() {
     _timer?.cancel();
     // Held (a reply being typed): it stays until let go, then has its full time again.
-    if (InAppNotifications.inApp.value != null && !InAppNotifications.holding.value) {
-      _timer = Timer(widget.showFor, InAppNotifications.dismiss);
-    }
+    final message = InAppNotifications.inApp.value;
+    if (message == null || InAppNotifications.holding.value) return;
+    final look = _look(message);
+    if (look?.stays ?? false) return;
+    _timer = Timer(look?.showFor ?? widget.showFor, InAppNotifications.dismiss);
   }
+
+  /// The look [message] names, if the gate has it.
+  BannerLook? _look(PushMessage? message) => message?.look == null ? null : widget.looks[message!.look];
 
   @override
   void dispose() {
@@ -75,7 +87,17 @@ class _InAppNotificationGateState extends State<InAppNotificationGate> {
     super.dispose();
   }
 
-  Widget _layout(Widget? current, List<Widget> previous) => Stack(alignment: widget.alignment ?? widget.edge.alignment, children: [...previous, ?current]);
+  Widget _layout(Widget? current, List<Widget> previous) => Stack(fit: StackFit.expand, children: [...previous, ?current]);
+
+  /// Each banner comes and goes its own look's way, and sits where it says: one going keeps its own while the next
+  /// comes in another.
+  Widget _transition(Widget child, Animation<double> animation) {
+    final look = child is _Shown ? child.look : null;
+    final edge = look?.edge ?? widget.edge;
+    final move = look?.transitionBuilder ?? (look?.edge == null ? widget.transitionBuilder : null) ?? InAppNotificationMotion.transitionAt(edge);
+    final at = look?.alignment ?? (look?.edge == null ? widget.alignment : null) ?? edge.alignment;
+    return Align(alignment: at, child: move(child, animation));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,23 +108,40 @@ class _InAppNotificationGateState extends State<InAppNotificationGate> {
         widget.child,
         ValueListenableBuilder<PushMessage?>(
           valueListenable: InAppNotifications.inApp,
-          builder: (context, message, _) => AnimatedSwitcher(
-            duration: still ? Duration.zero : widget.enter,
-            reverseDuration: still ? Duration.zero : widget.exit,
-            transitionBuilder: widget.transitionBuilder ?? InAppNotificationMotion.transitionAt(widget.edge),
-            layoutBuilder: _layout,
-            child: message == null
-                ? const SizedBox.shrink()
-                : KeyedSubtree(
-                    key: ValueKey(message.id),
-                    child: BannerEdgeScope(
-                      edge: widget.edge,
-                      child: Builder(builder: (context) => widget.builder(context, message, InAppNotifications.open, InAppNotifications.dismiss)),
+          builder: (context, message, _) {
+            final look = _look(message);
+            return AnimatedSwitcher(
+              duration: still ? Duration.zero : look?.enter ?? widget.enter,
+              reverseDuration: still ? Duration.zero : look?.exit ?? widget.exit,
+              transitionBuilder: _transition,
+              layoutBuilder: _layout,
+              child: message == null
+                  ? const SizedBox.shrink()
+                  : _Shown(
+                      key: ValueKey(message.id),
+                      look: look,
+                      child: BannerEdgeScope(
+                        edge: look?.edge ?? widget.edge,
+                        child: Builder(
+                          builder: (context) => (look?.builder ?? widget.builder)(context, message, InAppNotifications.open, InAppNotifications.dismiss),
+                        ),
+                      ),
                     ),
-                  ),
-          ),
+            );
+          },
         ),
       ],
     );
   }
+}
+
+/// A banner with the look it shows in, for its transition.
+class _Shown extends StatelessWidget {
+  const _Shown({super.key, required this.look, required this.child});
+
+  final BannerLook? look;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => child;
 }

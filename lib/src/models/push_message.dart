@@ -18,6 +18,7 @@ class PushMessage {
     this.ongoing = false,
     this.expanded = false,
     this.urgent = false,
+    this.look,
   });
 
   /// From a push's [data], whose [NotificationKeys] shape it.
@@ -35,6 +36,44 @@ class PushMessage {
       badge: int.tryParse(data[NotificationKeys.badge] ?? ''),
       expanded: data[NotificationKeys.expanded] == 'true',
       urgent: data[NotificationKeys.urgent] == 'true',
+      look: data[NotificationKeys.look],
+    );
+  }
+
+  /// The same notification with what is given changed.
+  PushMessage copyWith({
+    String? id,
+    String? title,
+    String? body,
+    Map<String, String>? data,
+    String? image,
+    String? group,
+    String? category,
+    String? channel,
+    String? sound,
+    int? badge,
+    NotificationProgress? progress,
+    bool? ongoing,
+    bool? expanded,
+    bool? urgent,
+    String? look,
+  }) {
+    return PushMessage(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      data: data ?? this.data,
+      image: image ?? this.image,
+      group: group ?? this.group,
+      category: category ?? this.category,
+      channel: channel ?? this.channel,
+      sound: sound ?? this.sound,
+      badge: badge ?? this.badge,
+      progress: progress ?? this.progress,
+      ongoing: ongoing ?? this.ongoing,
+      expanded: expanded ?? this.expanded,
+      urgent: urgent ?? this.urgent,
+      look: look ?? this.look,
     );
   }
 
@@ -73,6 +112,10 @@ class PushMessage {
 
   /// Breaks through Focus (iOS time-sensitive) and pops up (Android).
   final bool urgent;
+
+  /// The name of the banner look it shows in (`InAppNotificationGate.looks`: 'toast', 'popup'); the gate's own when
+  /// null.
+  final String? look;
 
   /// Nothing to show: a data-only push.
   bool get silent => (title ?? '').isEmpty && (body ?? '').isEmpty;

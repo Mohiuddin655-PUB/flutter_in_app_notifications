@@ -21,4 +21,5 @@ export 'src/widgets/in_app_notification_banner_style.dart';
 export 'src/widgets/in_app_notification_drag.dart';
 export 'src/widgets/in_app_notification_motion.dart';
 export 'src/widgets/in_app_notification_gate.dart';
+export 'src/widgets/in_app_notification_look.dart';
 export 'src/widgets/in_app_notification_reply_field.dart';

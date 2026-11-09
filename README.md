@@ -141,6 +141,31 @@ InAppNotifications.opened.addListener(() => print(InAppNotifications.take())); /
 Everything the banner does (its motion, hold, drag, tap, actions and reply field) is the same with or without setup.
 What needs `setup()` is only pushes, the notification bar, scheduling and the token.
 
+## Toast, snackbar, popup: the same banner, by name
+
+No new widgets: the gate keeps named looks of the same banner, and a message picks one by name.
+
+```dart
+InAppNotificationGate(
+  looks: {
+    'toast': BannerLook.toast(),       // small, dark, bottom, 2s, no actions
+    'snackbar': BannerLook.snackbar(), // across the bottom, dark, with its actions, 4s
+    'popup': BannerLook.popup(),       // in the middle, grows in, stays until tapped, answered or swiped
+    'alert': BannerLook.popup(style: myAlertStyle).copyWith(stays: false, showFor: Duration(seconds: 8)),
+    'mine': BannerLook(edge: BannerEdge.top, showFor: Duration(seconds: 3), builder: myBuilder), // the app's own
+  },
+  builder: ..., // the look when none is named, as before
+  child: child!,
+);
+
+InAppNotifications.show(title: 'Copied', look: 'toast');
+InAppNotifications.show(message: PushMessage(id: 'match', title: "It's a match!", category: 'request'), look: 'popup');
+```
+
+A push or a notification made on the phone picks one with `look` in its data (`NotificationKeys.look`), while the app
+is open. Each value a look leaves out (its edge, place, motion, time, builder) is the gate's own; an unknown name shows
+the gate's own look. The ready ones take a `style` (`InAppNotificationBannerStyle`) to look as the app's design does.
+
 ## While the app is open
 
 `setup(whileOpen: ...)` says where a push or a notification made on the phone shows while the app is open. In the

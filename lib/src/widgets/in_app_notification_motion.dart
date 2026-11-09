@@ -35,6 +35,21 @@ abstract final class InAppNotificationMotion {
     );
   }
 
+  /// A popup's coming and going: in place, growing from a little smaller and fading in, a touch past its size; back
+  /// out shrinking and fading.
+  static Widget pop(Widget child, Animation<double> animation) {
+    final grow = CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped);
+    final fade = CurvedAnimation(
+      parent: animation,
+      curve: const Interval(0, 0.5, curve: Curves.easeOut),
+      reverseCurve: Curves.easeIn,
+    );
+    return FadeTransition(
+      opacity: fade,
+      child: ScaleTransition(scale: Tween(begin: 0.86, end: 1.0).animate(grow), child: child),
+    );
+  }
+
   /// A plain slide down from the top, and back up.
   static Widget slide(Widget child, Animation<double> animation) {
     return SlideTransition(

@@ -1,3 +1,13 @@
+## 0.14.0
+
+- **Named looks of the same banner**: `InAppNotificationGate(looks: {...})` keeps `BannerLook`s by name, and
+  `InAppNotifications.show(look: 'toast')` (or `look` in a push's data, `NotificationKeys.look`) shows a message that
+  way. Ready ones: `BannerLook.toast()`, `.snackbar()`, `.popup()` (centred, stays until answered), each with a `style`
+  and `copyWith`; or the app's own (`BannerLook(edge:, alignment:, transitionBuilder:, showFor:, stays:, builder:)`).
+  Each banner comes and goes its own look's way.
+- `PushMessage.look` and `PushMessage.copyWith`; `InAppNotificationMotion.pop` (in place, growing in).
+- The example shows the banner without setup: top or bottom, actions, a reply, a toast, a snackbar and a popup.
+
 ## 0.13.0
 
 - **The banner works without setup**: wrap the app in `InAppNotificationGate` and call `InAppNotifications.show()`;
