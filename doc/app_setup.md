@@ -420,9 +420,9 @@ Build each notification's details from the `PushMessage`, so every field shows:
 | `sound` | `RawResourceAndroidNotificationSound(sound)` (`res/raw`) | `sound` (a file in the app bundle) |
 | `badge` | `number` | `badgeNumber` |
 | `progress` | `showProgress`, `maxProgress`, `progress`, `indeterminate` | — (say it in the body) |
-| `ongoing` | `ongoing` | — |
+| `ongoing` | `ongoing` (Android 14+ still lets users swipe it away) | — |
 | `expanded` | `BigTextStyleInformation(body)` | — (iOS expands by itself) |
-| `urgent` | `Importance.max`, `Priority.max` | `interruptionLevel: InterruptionLevel.timeSensitive` (with the Time Sensitive capability) |
+| `urgent` | a channel of its own made with `Importance.max` (a channel's importance can't change once made), `Priority.max` | `interruptionLevel: InterruptionLevel.timeSensitive` (with the Time Sensitive capability) |
 | `quiet` (from the kit) | `silent: true` | `presentBanner: false, presentSound: false, presentList: true` |
 
 ### 9.4 A push while the app isn't in front
@@ -445,6 +445,8 @@ Future<void> pushInBackground(RemoteMessage m) async {
 FirebaseMessaging.onBackgroundMessage(pushInBackground); // at launch, before runApp
 ```
 
+- A static handler's **class** needs `@pragma('vm:entry-point')` too, not only the method, or native code can't reach
+  it (`To access ... from native code, it must be annotated`).
 - The messaging delegate reads a push with `PushMessage.fromData` (title and body from the data when the push has no
   notification part), so a push shows the same way while the app is open.
 

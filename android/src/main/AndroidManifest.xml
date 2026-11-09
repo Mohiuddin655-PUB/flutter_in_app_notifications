@@ -6,9 +6,14 @@
 
     <application>
         <!-- flutter_local_notifications' receivers, which it doesn't declare itself: without them a scheduled
-             notification's alarm goes off and nothing shows. Used only when the app has that plugin. -->
+             notification's alarm goes off and nothing shows, and an action's button does nothing. Used only when the
+             app has that plugin. -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <!-- An action on a notification (Reply, Accept): without it the buttons do nothing. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
             android:exported="false" />
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"

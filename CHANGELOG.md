@@ -1,3 +1,11 @@
+## 0.9.4
+
+- **Android: actions work**: the package's manifest declares flutter_local_notifications' `ActionBroadcastReceiver`;
+  without it a notification's buttons and reply did nothing.
+- **Docs**: background handlers' class needs `@pragma('vm:entry-point')` too; `urgent` on Android needs a channel of its
+  own with high importance (a channel's importance can't change once made); Android 14+ lets users swipe away an
+  `ongoing` one.
+
 ## 0.9.3
 
 - **Docs say what is required and what is optional**: the README's native checklist and the app setup guide's steps
