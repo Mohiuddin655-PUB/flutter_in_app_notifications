@@ -52,13 +52,22 @@ class InAppNotifications {
   /// The data of the push last tapped, until [take]n.
   static ValueListenable<Map<String, String>?> get opened => _k.opened;
 
-  /// A notification made on the phone (a reminder, say), in the notification bar: now, or at [at] (scheduled; it shows
-  /// even when the app is closed). [id] names it, to replace or [cancel] it; a tap puts [data] in [opened], as a push's.
+  /// A notification made on the phone (a reminder, say), in the notification bar: now, at [at] (a plain time, such as
+  /// `DateTime(2026, 11, 10, 10)` for 10am), or [after] a while (scheduled; it shows even when the app is closed).
+  /// Times are read by `setup(now:)`'s clock, and the display delegate turns them into the phone's. [id] names it, to replace or [cancel] it; a tap puts [data] in [opened], as a push's.
   /// False when it couldn't be made.
   /// While the app is open, with [LocalNotificationVisibility.inApp], it shows inside the app and goes into the bar
   /// quietly, as a push does.
-  static Future<bool> notify({required String id, String? title, String? body, Map<String, String> data = const {}, DateTime? at}) {
+  static Future<bool> notify({
+    required String id,
+    String? title,
+    String? body,
+    Map<String, String> data = const {},
+    DateTime? at,
+    Duration? after,
+  }) {
     final message = PushMessage(id: id, title: title, body: body, data: data);
+    at ??= after == null ? null : _k.now().add(after);
     if (at != null && at.isAfter(_k.now())) return _k.run(() => _k.schedules.add(message, at), 'schedule');
     return _k.run(() async => _k.present(message, local: true), 'notify');
   }

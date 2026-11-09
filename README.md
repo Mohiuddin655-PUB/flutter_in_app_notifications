@@ -30,7 +30,8 @@ MaterialApp(
 
 // A notification made on the phone: now, or scheduled.
 await InAppNotifications.notify(id: 'streak', title: 'Keep your streak', data: {'page': 'home'});
-await InAppNotifications.notify(id: 'reminder', title: 'See who liked you', at: tomorrowAtNine, data: {'page': 'likes'});
+await InAppNotifications.notify(id: 'reminder', title: 'See who liked you', at: DateTime(2026, 11, 10, 9), data: {'page': 'likes'});
+await InAppNotifications.notify(id: 'break', title: 'Back to it?', after: const Duration(minutes: 30));
 await InAppNotifications.cancel('reminder');
 
 InAppNotifications.opened.addListener(() {

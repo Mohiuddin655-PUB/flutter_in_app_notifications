@@ -1,3 +1,8 @@
+## 0.8.1
+
+- **Plain times to schedule**: `notify(at:)` takes a plain `DateTime` (`DateTime(2026, 11, 10, 10)` for 10am), and
+  `notify(after: Duration)` a while from now; both are read by `setup(now:)`'s clock, so callers never reach for it.
+
 ## 0.8.0
 
 - **A plugin, so the app's native side stays small**: Android's `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED`
