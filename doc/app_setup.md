@@ -494,5 +494,10 @@ runs without the kit, so it does it itself, with the plugin's id from the answer
 Future<void> answeredInBackground(NotificationResponse r) async {
   if (r.id != null) await FlutterLocalNotificationsPlugin().cancel(id: r.id!);
   await handleAction(LocalDisplayDelegate.answerOf(r.id, r.actionId, r.input, r.payload));
+  // Android holds one answered with a typed reply a moment and ignores a cancel made at once: again after.
+  if (r.id != null && r.input != null) {
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    await FlutterLocalNotificationsPlugin().cancel(id: r.id!);
+  }
 }
 ```

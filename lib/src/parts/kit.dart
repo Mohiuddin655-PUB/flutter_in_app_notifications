@@ -96,12 +96,19 @@ class Kit {
     await run(schedules.load, 'load schedules');
   }
 
+  /// How long after a typed reply its notification is taken away once more (Android holds it a moment).
+  static const replyCancelDelay = Duration(milliseconds: 1500);
+
   /// An answer on a notification: an action's notification goes (Android leaves one answered with a reply on screen),
   /// then the answer is handled.
   Future<void> answered(NotificationAnswer answer) async {
     if (!answer.tapped) {
       unawaited(run(() => display.cancel(answer.id), 'cancel answered'));
       unawaited(run(() => NativeActions.removePush(answer.id), 'remove answered push'));
+      // Android keeps one answered with a typed reply a moment longer and ignores a cancel made at once: again after.
+      if (answer.input != null) {
+        unawaited(Future<void>.delayed(replyCancelDelay, () => run(() => display.cancel(answer.id), 'cancel replied')));
+      }
     }
     await responses.handle(answer);
   }

@@ -1,3 +1,9 @@
+## 0.11.1
+
+- **Android: a notification answered with a typed reply goes**: Android holds one a moment after a direct reply and
+  ignores a cancel made at once, so it is taken away once more 1.5 s later. A background handler does the same (the
+  guide shows it).
+
 ## 0.11.0
 
 - **The banner moves as Discord's**: it comes down from above, fading in and growing from a little smaller, a touch
