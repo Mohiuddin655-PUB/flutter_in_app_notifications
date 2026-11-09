@@ -12,12 +12,19 @@ import 'in_app_notification_motion.dart';
 /// its arguments or [copyWith].
 @immutable
 class BannerLook {
-  const BannerLook({this.builder, this.edge, this.alignment, this.transitionBuilder, this.showFor, this.stays = false, this.enter, this.exit});
+  const BannerLook({this.builder, this.edge, this.alignment, this.transitionBuilder, this.showFor, this.stays = false, this.enter, this.exit, this.lane});
 
   /// A toast: small, dark and short, at the bottom; its title and body only, gone after [showFor] (2s).
-  factory BannerLook.toast({InAppNotificationBannerStyle? style, BannerEdge edge = BannerEdge.bottom, Duration showFor = const Duration(seconds: 2)}) {
+  /// In its own [lane], so it never replaces the banner (nor is replaced by one).
+  factory BannerLook.toast({
+    InAppNotificationBannerStyle? style,
+    BannerEdge edge = BannerEdge.bottom,
+    Duration showFor = const Duration(seconds: 2),
+    String? lane = 'toast',
+  }) {
     return BannerLook(
       edge: edge,
+      lane: lane,
       showFor: showFor,
       builder: (context, message, onOpen, onDismiss) {
         final colors = Theme.of(context).colorScheme;
@@ -124,6 +131,11 @@ class BannerLook {
   final Duration? enter;
   final Duration? exit;
 
+  /// Its own lane (a toast's, say): a message in this look shows beside the main banner, neither replacing it nor
+  /// replaced by it; one in the same lane replaces it. Only the main banner is held (a reply typed, a finger on it).
+  /// Null: the main lane.
+  final String? lane;
+
   /// This look with what is given changed.
   BannerLook copyWith({
     InAppNotificationBuilder? builder,
@@ -134,6 +146,7 @@ class BannerLook {
     bool? stays,
     Duration? enter,
     Duration? exit,
+    String? lane,
   }) {
     return BannerLook(
       builder: builder ?? this.builder,
@@ -144,6 +157,7 @@ class BannerLook {
       stays: stays ?? this.stays,
       enter: enter ?? this.enter,
       exit: exit ?? this.exit,
+      lane: lane ?? this.lane,
     );
   }
 }

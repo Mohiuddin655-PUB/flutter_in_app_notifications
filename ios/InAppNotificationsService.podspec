@@ -2,7 +2,7 @@
 # an extension can't link it. The app's Podfile adds it to the extension's target.
 Pod::Spec.new do |s|
   s.name             = 'InAppNotificationsService'
-  s.version          = '0.15.0'
+  s.version          = '0.16.0'
   s.summary          = "A push's image, for in_app_notifications' Notification Service Extension."
   s.homepage         = 'https://github.com/Mohiuddin655-PUB/flutter_in_app_notifications'
   s.license          = { :file => '../LICENSE' }

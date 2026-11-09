@@ -1,6 +1,7 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:flutter/painting.dart' show EdgeInsetsGeometry;
 
 import 'delegates/error_reporter.dart';
 import 'delegates/notification_action_handler.dart';
@@ -8,6 +9,7 @@ import 'delegates/notification_display_delegate.dart';
 import 'delegates/notification_messaging_delegate.dart';
 import 'delegates/schedule_store_delegate.dart';
 import 'delegates/token_store_delegate.dart';
+import 'enums/banner_edge.dart';
 import 'enums/while_open.dart';
 import 'models/notification_action.dart';
 import 'models/notification_answer.dart';
@@ -23,7 +25,7 @@ class InAppNotifications {
   const InAppNotifications._();
 
   /// The banner's state, there with or without [setup].
-  static final _b = BannerState();
+  static final _b = BannerState.i;
 
   static Kit? _kit;
 
@@ -102,11 +104,25 @@ class InAppNotifications {
   /// [message] in the app's banner (`InAppNotificationGate`), with nothing in the notification bar and no push: a
   /// message the app tells itself (a saved change, a match found). Works without [setup]. Its actions and a tap work as
   /// any other's. [id], [title], [body] and [data] are the short way for a plain one. [look] names how it shows, from
-  /// `InAppNotificationGate.looks` ('toast', 'snackbar', 'popup' or the app's own); the gate's own look when null.
-  static void show({String? id, String? title, String? body, Map<String, String> data = const {}, PushMessage? message, String? look}) {
+  /// `InAppNotificationGate.looks` ('toast', 'snackbar', 'popup' or the app's own); the gate's own look when null. A
+  /// look with its own lane (`BannerLook.lane`, a toast's) shows beside the banner without replacing it. This once,
+  /// [showFor], [edge] and [padding] take the place of its look's (a toast kept longer, higher or at the top).
+  static void show({
+    String? id,
+    String? title,
+    String? body,
+    Map<String, String> data = const {},
+    PushMessage? message,
+    String? look,
+    Duration? showFor,
+    BannerEdge? edge,
+    EdgeInsetsGeometry? padding,
+  }) {
     assert(message != null || id != null || title != null, 'show needs a message, an id or a title');
-    final shown = message ?? PushMessage(id: id ?? 'banner-${_shown++}', title: title, body: body, data: data);
-    _b.inApp.value = look == null ? shown : shown.copyWith(look: look);
+    var shown = message ?? PushMessage(id: id ?? 'banner-${_shown++}', title: title, body: body, data: data);
+    if (look != null) shown = shown.copyWith(look: look);
+    if (showFor != null || edge != null || padding != null) _b.placement[shown] = (showFor: showFor, edge: edge, padding: padding);
+    _b.present(shown);
   }
 
   /// What each kind of message offers (its actions), for the banner without [setup]; [setup]'s `categories` set them

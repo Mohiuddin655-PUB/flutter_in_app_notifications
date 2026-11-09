@@ -162,6 +162,19 @@ InAppNotifications.show(title: 'Copied', look: 'toast');
 InAppNotifications.show(message: PushMessage(id: 'match', title: "It's a match!", category: 'request'), look: 'popup');
 ```
 
+**Lanes: a toast beside the banner.** A look with its own `lane` (`BannerLook.toast()` has `lane: 'toast'`) shows in
+that lane, beside the notification banner: a toast never replaces a banner showing, nor a banner a toast; each goes on
+its own time, and only the banner is held (a reply typed, a finger on it). A message in the same lane replaces the one
+there.
+
+**This once:** `show()` takes `showFor`, `edge` and `padding` in place of its look's, for one message:
+
+```dart
+InAppNotifications.show(title: 'Press back again to leave', look: 'toast', showFor: const Duration(seconds: 3));
+InAppNotifications.show(title: 'Copied', look: 'toast', edge: BannerEdge.top);
+InAppNotifications.show(title: 'Blocked', look: 'toast', padding: const EdgeInsets.only(bottom: 120));
+```
+
 A push or a notification made on the phone picks one with `look` in its data (`NotificationKeys.look`), while the app
 is open. Each value a look leaves out (its edge, place, motion, time, builder) is the gate's own; an unknown name shows
 the gate's own look. The ready ones take a `style` (`InAppNotificationBannerStyle`) to look as the app's design does.

@@ -121,7 +121,7 @@ class Kit {
       return;
     }
     // A hold stays with the banner that has it: one in use (a reply typed) and replaced lets go as it goes.
-    banner.inApp.value = message;
+    banner.present(message);
     if (whileOpen.keepsInBar) await (local ? display.notify(message, quiet: true) : display.keep(message));
   }
 

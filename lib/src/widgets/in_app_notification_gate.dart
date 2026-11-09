@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../in_app_notifications.dart';
 import '../enums/banner_edge.dart';
 import '../models/push_message.dart';
+import '../parts/banner_state.dart';
 import 'in_app_notification_look.dart';
 import 'in_app_notification_motion.dart';
 
@@ -56,44 +57,82 @@ class InAppNotificationGate extends StatefulWidget {
 }
 
 class _InAppNotificationGateState extends State<InAppNotificationGate> {
-  Timer? _timer;
+  BannerState get _b => BannerState.i;
 
-  /// The banners' layer, made once per configuration: a rebuild of the gate (the keyboard moving, the screen turning)
+  /// Each lane's message (the main one under null), and what listens to it.
+  var _lanes = <String?, ValueNotifier<PushMessage?>>{};
+  final _listeners = <String?, VoidCallback>{};
+  final _timers = <String?, Timer>{};
+
+  /// The banners' layers, made once per configuration: a rebuild of the gate (the keyboard moving, the screen turning)
   /// hands the same widget down, so nothing under it is built again.
-  late Widget _layer = _layerFor(widget);
-
-  static Widget _layerFor(InAppNotificationGate gate) => Overlay.wrap(child: _Banners(gate));
+  late Widget _layer;
 
   @override
   void initState() {
     super.initState();
-    InAppNotifications.inApp.addListener(_changed);
-    InAppNotifications.holding.addListener(_changed);
-    _changed();
+    _configure();
+    _b.holding.addListener(_held);
   }
 
   @override
   void didUpdateWidget(InAppNotificationGate oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _layer = _layerFor(widget);
-    if (widget.showFor != oldWidget.showFor || widget.looks != oldWidget.looks) _changed();
+    _configure();
   }
 
-  /// A new banner, or one held or let go: it goes by itself after its time, unless held or its look [BannerLook.stays].
-  void _changed() {
-    _timer?.cancel();
-    final message = InAppNotifications.inApp.value;
-    if (message == null || InAppNotifications.holding.value) return;
+  /// The lanes the looks ask for, each listened to and laid over the app.
+  void _configure() {
+    _unlisten();
+    _b.laneOfLook
+      ..clear()
+      ..addAll({for (final e in widget.looks.entries) e.key: ?e.value.lane});
+    _lanes = {null: _b.inApp, for (final lane in _b.laneOfLook.values) lane: _b.lane(lane)};
+    for (final lane in _lanes.keys) {
+      _listeners[lane] = () => _changed(lane);
+      _lanes[lane]!.addListener(_listeners[lane]!);
+      _changed(lane);
+    }
+    _layer = Overlay.wrap(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [for (final e in _lanes.entries) _Banners(gate: widget, lane: e.value, main: e.key == null)],
+      ),
+    );
+  }
+
+  void _unlisten() {
+    for (final e in _listeners.entries) {
+      _lanes[e.key]?.removeListener(e.value);
+    }
+    _listeners.clear();
+  }
+
+  void _held() => _changed(null);
+
+  /// A lane's new message, or the banner held or let go: it goes by itself after its time, unless held (the main
+  /// lane's) or its look [BannerLook.stays]; a time asked by `show()` comes first.
+  void _changed(String? lane) {
+    _timers.remove(lane)?.cancel();
+    final notifier = _lanes[lane];
+    final message = notifier?.value;
+    if (notifier == null || message == null || (lane == null && _b.holding.value)) return;
     final look = _Banners.lookOf(widget, message);
-    if (look?.stays ?? false) return;
-    _timer = Timer(look?.showFor ?? widget.showFor, InAppNotifications.dismiss);
+    final time = _b.placement[message]?.showFor ?? (look?.stays ?? false ? null : look?.showFor ?? widget.showFor);
+    if (time == null) return;
+    _timers[lane] = Timer(time, () {
+      if (lane == null) return InAppNotifications.dismiss();
+      if (identical(notifier.value, message)) notifier.value = null;
+    });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    InAppNotifications.inApp.removeListener(_changed);
-    InAppNotifications.holding.removeListener(_changed);
+    for (final timer in _timers.values) {
+      timer.cancel();
+    }
+    _unlisten();
+    _b.holding.removeListener(_held);
     super.dispose();
   }
 
@@ -119,28 +158,35 @@ class _InAppNotificationGateState extends State<InAppNotificationGate> {
   }
 }
 
-/// The banners over the app, each in its look: built only when the banner changes.
+/// One lane's banners over the app, each in its look: built only when the lane's message changes.
 class _Banners extends StatelessWidget {
-  const _Banners(this.gate);
+  const _Banners({required this.gate, required this.lane, required this.main});
 
   final InAppNotificationGate gate;
+  final ValueNotifier<PushMessage?> lane;
+
+  /// The main lane: its tap and swipe go through `InAppNotifications` (open, dismiss).
+  final bool main;
 
   /// The look [message] names, if the gate has it.
   static BannerLook? lookOf(InAppNotificationGate gate, PushMessage? message) => message?.look == null ? null : gate.looks[message!.look];
 
   Widget _layout(Widget? current, List<Widget> previous) => Stack(fit: StackFit.expand, children: [...previous, ?current]);
 
-  /// Each banner comes and goes its own look's way, and sits where it says: one going keeps its own while the next
-  /// comes in another. One going can't be touched: a tap meant for it would open the next.
+  /// Each banner comes and goes its own look's way, and sits where it says (or where `show()` asked): one going keeps
+  /// its own while the next comes in another. One going can't be touched: a tap meant for it would open the next.
   Widget _transition(Widget child, Animation<double> animation) {
-    final look = child is _Shown ? child.look : null;
-    final edge = look?.edge ?? gate.edge;
-    final own = look?.edge == null;
+    final shown = child is _Shown ? child : null;
+    final look = shown?.look;
+    final edge = shown?.edge ?? gate.edge;
+    final own = look?.edge == null && shown?.placement?.edge == null;
     final move = look?.transitionBuilder ?? (own ? gate.transitionBuilder : null) ?? InAppNotificationMotion.transitionAt(edge);
     final at = look?.alignment ?? (own ? gate.alignment : null) ?? edge.alignment;
+    final moved = _UntouchableLeaving(animation: animation, child: move(child, animation));
+    final padding = shown?.placement?.padding;
     return Align(
       alignment: at,
-      child: _UntouchableLeaving(animation: animation, child: move(child, animation)),
+      child: padding == null ? moved : Padding(padding: padding, child: moved),
     );
   }
 
@@ -148,7 +194,7 @@ class _Banners extends StatelessWidget {
   Widget build(BuildContext context) {
     final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     return ValueListenableBuilder<PushMessage?>(
-      valueListenable: InAppNotifications.inApp,
+      valueListenable: lane,
       builder: (context, message, _) {
         final look = lookOf(gate, message);
         return AnimatedSwitcher(
@@ -156,7 +202,17 @@ class _Banners extends StatelessWidget {
           reverseDuration: still ? Duration.zero : look?.exit ?? gate.exit,
           transitionBuilder: _transition,
           layoutBuilder: _layout,
-          child: message == null ? const SizedBox.shrink() : _Shown(key: ValueKey(message.id), gate: gate, message: message, look: look),
+          child: message == null
+              ? const SizedBox.shrink()
+              : _Shown(
+                  key: ValueKey(message.id),
+                  gate: gate,
+                  lane: lane,
+                  main: main,
+                  message: message,
+                  look: look,
+                  placement: BannerState.i.placement[message],
+                ),
         );
       },
     );
@@ -165,25 +221,34 @@ class _Banners extends StatelessWidget {
 
 /// One banner in its look. Its tap and its swipe act on it alone: once another has replaced it, they do nothing.
 class _Shown extends StatelessWidget {
-  const _Shown({super.key, required this.gate, required this.message, required this.look});
+  const _Shown({super.key, required this.gate, required this.lane, required this.main, required this.message, required this.look, required this.placement});
 
   final InAppNotificationGate gate;
+  final ValueNotifier<PushMessage?> lane;
+  final bool main;
   final PushMessage message;
   final BannerLook? look;
+  final BannerPlacement? placement;
 
-  bool get _current => InAppNotifications.inApp.value?.id == message.id;
+  BannerEdge get edge => placement?.edge ?? look?.edge ?? gate.edge;
+
+  bool get _current => lane.value?.id == message.id;
 
   void _open() {
-    if (_current) InAppNotifications.open();
+    if (!_current) return;
+    if (main) return InAppNotifications.open();
+    lane.value = null;
+    BannerState.i.open(message.data);
   }
 
   void _dismiss() {
-    if (_current) InAppNotifications.dismiss();
+    if (!_current) return;
+    main ? InAppNotifications.dismiss() : lane.value = null;
   }
 
   @override
   Widget build(BuildContext context) {
-    return BannerEdgeScope(edge: look?.edge ?? gate.edge, child: (look?.builder ?? gate.builder)(context, message, _open, _dismiss));
+    return BannerEdgeScope(edge: edge, child: (look?.builder ?? gate.builder)(context, message, _open, _dismiss));
   }
 }
 

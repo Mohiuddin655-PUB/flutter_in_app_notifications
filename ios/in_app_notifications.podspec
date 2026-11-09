@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'in_app_notifications'
-  s.version          = '0.15.0'
+  s.version          = '0.16.0'
   s.summary          = 'How a notification shows while the app is open, for in_app_notifications.'
   s.description      = <<-DESC
 How a notification shows while the app is open, for in_app_notifications.

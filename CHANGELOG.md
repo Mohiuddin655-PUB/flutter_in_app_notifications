@@ -1,3 +1,10 @@
+## 0.16.0
+
+- **Lanes**: a look with its own `lane` (`BannerLook(lane: 'toast')`; `BannerLook.toast()` has one) shows beside the
+  notification banner, neither replacing the other, each on its own time; only the main banner is held.
+- **This once**: `show(showFor:, edge:, padding:)` in place of its look's, for one message (a toast kept longer, at the
+  top, or higher).
+
 ## 0.15.0
 
 - **Fix (Android): an app without flutter_local_notifications crashed** on install, update or restart: the package
