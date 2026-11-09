@@ -7,5 +7,6 @@ export 'src/delegates/display_delegate.dart';
 export 'src/delegates/error_reporter.dart';
 export 'src/delegates/messaging_delegate.dart';
 export 'src/delegates/token_store_delegate.dart';
+export 'src/enums/local_notification_visibility.dart';
 export 'src/in_app_notifications.dart';
 export 'src/models/push_message.dart';

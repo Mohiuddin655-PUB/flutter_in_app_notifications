@@ -1,3 +1,10 @@
+## 0.2.0
+
+- **Where a push shows while the app is open**: `setup(visibility: LocalNotificationVisibility.inApp)` puts it in
+  `InAppNotifications.inApp` (the newest) for the app to show inside itself, a banner at its top, say, instead of the
+  notification bar; `open()` when it is tapped (its data goes to `opened`), `dismiss()` when it goes. `system` (the
+  default) shows it in the notification bar, as before. In the background or closed, the system shows it either way.
+
 ## 0.1.0
 
 - `InAppNotifications`: `setup` with the app's delegates, `init`, `start`, `clear`, `opened` and `take`.

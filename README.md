@@ -29,6 +29,10 @@ InAppNotifications.opened.addListener(() {
   couldn't reach the server.
 - **Shown while open**: each push from `MessagingDelegate.received` with a title or a body goes to
   `DisplayDelegate.show` (which does nothing where the platform shows it itself, as iOS does).
+- **Inside the app instead**: with `setup(visibility: LocalNotificationVisibility.inApp)`, such a push goes to
+  `InAppNotifications.inApp` (the newest replaces the one before) and not to the notification bar; the app shows it
+  (a banner at its top, say) and calls `open()` when it is tapped or `dismiss()` when it goes. In the background or
+  closed, the system shows it in the notification bar either way.
 - **Tapped**: a push tapped in the background (`MessagingDelegate.tapped`), one that started the app (`initial`), and
   one shown while open (`DisplayDelegate.tapped` / `initial`) all put their data in `opened`, which waits until the app
   is ready to `take` it.
