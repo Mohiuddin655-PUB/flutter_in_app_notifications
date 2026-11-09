@@ -10,6 +10,7 @@ import '../delegates/schedule_store_delegate.dart';
 import '../delegates/token_store_delegate.dart';
 import '../enums/local_notification_visibility.dart';
 import '../models/notification_action.dart';
+import '../models/notification_answer.dart';
 import '../models/push_message.dart';
 import 'native_actions.dart';
 import 'responses.dart';
@@ -48,6 +49,9 @@ class Kit {
   bool _onScreen = true;
   final opened = ValueNotifier<Map<String, String>?>(null);
   final inApp = ValueNotifier<PushMessage?>(null);
+
+  /// The app's banner is being used (a reply typed): it doesn't go by itself until let go.
+  final holding = ValueNotifier<bool>(false);
   bool _ready = false;
 
   Future<void> init() async {
@@ -56,7 +60,7 @@ class Kit {
     await run(() => display.init(categories: categories.values.toList()), 'display init');
     messaging.received.listen(_received);
     messaging.tapped.listen((message) => open(message.data));
-    display.responses.listen(responses.handle);
+    display.responses.listen(answered);
     await run(() => NativeActions.listen(responses.handle), 'push actions');
     await run(() async => open((await messaging.initial())?.data), 'initial push');
     await run(() async {
@@ -78,6 +82,16 @@ class Kit {
       },
     );
     await run(schedules.load, 'load schedules');
+  }
+
+  /// An answer on a notification: an action's notification goes (Android leaves one answered with a reply on screen),
+  /// then the answer is handled.
+  Future<void> answered(NotificationAnswer answer) async {
+    if (!answer.tapped) {
+      unawaited(run(() => display.cancel(answer.id), 'cancel answered'));
+      unawaited(run(() => NativeActions.removePush(answer.id), 'remove answered push'));
+    }
+    await responses.handle(answer);
   }
 
   Future<void> clear() async {

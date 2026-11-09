@@ -52,6 +52,7 @@ class InAppNotifications {
   static void answer(String actionId, {String? input}) {
     final message = _k.inApp.value;
     if (message == null) return;
+    _k.holding.value = false;
     _k.inApp.value = null;
     unawaited(_k.run(() => _k.display.cancel(message.id), 'cancel answered'));
     unawaited(_k.run(() => NativeActions.removePush(message.id), 'remove answered push'));
@@ -112,6 +113,7 @@ class InAppNotifications {
   /// The push shown inside the app was tapped: it goes, and its data waits in [opened].
   static void open() {
     final message = _k.inApp.value;
+    _k.holding.value = false;
     _k.inApp.value = null;
     _k.open(message?.data);
     // Seen: its copy in the notification bar goes too (on iOS a push's is the system's, taken away natively).
@@ -122,7 +124,16 @@ class InAppNotifications {
   }
 
   /// The push shown inside the app goes untapped.
-  static void dismiss() => _k.inApp.value = null;
+  static void dismiss() {
+    _k.holding.value = false;
+    _k.inApp.value = null;
+  }
+
+  /// [on]: the app's banner is in use (a reply being typed), so it doesn't go by itself; false lets it go on its time.
+  static void hold(bool on) => _k.holding.value = on;
+
+  /// Whether the app's banner is held ([hold]).
+  static ValueListenable<bool> get holding => _k.holding;
 
   /// The tapped push's data, once.
   static Map<String, String>? take() {

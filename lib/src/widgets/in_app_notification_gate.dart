@@ -44,18 +44,23 @@ class _InAppNotificationGateState extends State<InAppNotificationGate> {
   void initState() {
     super.initState();
     InAppNotifications.inApp.addListener(_changed);
+    InAppNotifications.holding.addListener(_changed);
     _changed();
   }
 
   void _changed() {
     _timer?.cancel();
-    if (InAppNotifications.inApp.value != null) _timer = Timer(widget.showFor, InAppNotifications.dismiss);
+    // Held (a reply being typed): it stays until let go, then has its full time again.
+    if (InAppNotifications.inApp.value != null && !InAppNotifications.holding.value) {
+      _timer = Timer(widget.showFor, InAppNotifications.dismiss);
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     InAppNotifications.inApp.removeListener(_changed);
+    InAppNotifications.holding.removeListener(_changed);
     super.dispose();
   }
 

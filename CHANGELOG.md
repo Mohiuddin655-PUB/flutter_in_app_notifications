@@ -1,3 +1,11 @@
+## 0.9.6
+
+- **An answered notification goes**: after an action (a reply, Accept), its notification is taken away; Android left
+  one answered with a reply on screen, spinning. A background handler does the same itself (the guide shows how).
+- **The app's banner can stay while in use**: `InAppNotifications.hold(true)` keeps it (a reply being typed) until
+  `hold(false)`, an answer, a tap or a dismiss; `holding` tells the banner.
+- **iOS**: a push action's data leaves out the push's own keys (`gcm.*`, `google.*`), as Android's does.
+
 ## 0.9.5
 
 - **iOS: an action on a push answered while the app was closed is handled at once**: the plugin keeps the app running

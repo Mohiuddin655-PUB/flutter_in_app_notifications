@@ -114,7 +114,8 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
            action != UNNotificationDefaultActionIdentifier, action != UNNotificationDismissActionIdentifier {
             var data: [String: String] = [:]
             for (key, value) in info {
-                guard let key = key as? String, key != "aps" else { continue }
+                // The push's own keys stay out, as Android's data has none of them.
+                guard let key = key as? String, key != "aps", !key.hasPrefix("gcm."), !key.hasPrefix("google.") else { continue }
                 data[key] = "\(value)"
             }
             let token = UUID().uuidString

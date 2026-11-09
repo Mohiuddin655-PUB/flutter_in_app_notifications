@@ -473,4 +473,19 @@ category's actions and, through the extension, the image.
 
 `InAppNotificationGate`'s builder gets the message: offer its actions with `InAppNotifications.category(message.category)`
 and answer one with `InAppNotifications.answer(actionId, input:)`, which goes to `onAction` like an answer on the
-notification and takes the banner and its copy in the bar away.
+notification and takes the banner and its copy in the bar away. For a reply typed in the banner, call
+`InAppNotifications.hold(true)` when its field is focused, so the banner doesn't go while typing; an answer, a tap or a
+dismiss lets it go.
+
+### 9.7 After an answer
+
+The kit takes an answered notification away (Android leaves one answered with a reply on screen). A background handler
+runs without the kit, so it does it itself, with the plugin's id from the answer:
+
+```dart
+@pragma('vm:entry-point')
+Future<void> answeredInBackground(NotificationResponse r) async {
+  if (r.id != null) await FlutterLocalNotificationsPlugin().cancel(id: r.id!);
+  await handleAction(LocalDisplayDelegate.answerOf(r.id, r.actionId, r.input, r.payload));
+}
+```
