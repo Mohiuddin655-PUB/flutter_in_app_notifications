@@ -1,3 +1,9 @@
+## 0.12.6
+
+- **The README shows the banner**: every look of it, each with the call that makes it (`doc/images/banner_looks.png`,
+  and `doc/banner_looks.html` to play its arrival in a browser), the same looks in a real app, and what the package
+  does; both pictures are pub.dev screenshots too.
+
 ## 0.12.5
 
 - **The status bar follows a gradient card too**: under the status bar, a card with a gradient sets its icons by its

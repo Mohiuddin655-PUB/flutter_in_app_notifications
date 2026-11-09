@@ -4,6 +4,33 @@ Push notifications for any push service and backend: the phone's **token** kept 
 **shown while the app is open**, and the **page a tapped push opens**. It has no dependencies: the app gives the push
 service, the display and the storage through three small delegates.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/images/banner_looks.png" width="760" alt="Every look of the in-app banner, each with the call that makes it">
+</p>
+
+<sub>Every look of the in-app banner, each with the call that makes it. Open
+[doc/banner_looks.html](doc/banner_looks.html) in a browser to play its arrival.</sub>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/images/banner_looks_ios.png" width="760" alt="The same looks in a real app on an iPhone">
+</p>
+
+<sub>The same looks in a real app (iPhone simulator): only the banner's style and builders change.</sub>
+
+## What it does
+
+- **Pushes and the phone's own notifications**, the same way: a token kept on the account, shown in the notification bar,
+  scheduled, cancelled.
+- **A banner inside the app** while it is open, moving as Discord's: it comes down fading in and growing, a finger holds
+  it, a drag moves it exactly with the finger, a let-go carries it out from where it is or springs it back.
+- **Actions and replies** (Accept, Reject, a typed reply) on the notification and on the banner, handled even when the
+  app was closed.
+- **Images, groups, sounds, badges, progress, urgent ones**, on Android and iOS.
+- **Every visible part is yours**: a style for the look, and a builder for any part. The motion, hold, drag and
+  actions stay the package's.
+- **No dependencies**: the push service, the display and the storage are your delegates; the native setup comes with the
+  package.
+
 ```dart
 InAppNotifications.setup(
   messaging: FcmMessaging(),          // NotificationMessagingDelegate: Firebase Cloud Messaging, say
