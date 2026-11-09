@@ -1,6 +1,6 @@
 name: in_app_notifications
 description: "Push notifications for any backend: the device token kept on the signed-in account, a push shown while the app is open, and the page a tapped one opens. No dependencies; the app gives the messaging, display and storage through delegates."
-version: 0.2.0
+version: 0.3.0
 repository: https://github.com/Mohiuddin655-PUB/flutter_in_app_notifications
 issue_tracker: https://github.com/Mohiuddin655-PUB/flutter_in_app_notifications/issues
 topics: [notifications, push, fcm, token]

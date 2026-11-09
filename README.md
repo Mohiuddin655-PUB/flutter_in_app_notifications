@@ -6,8 +6,8 @@ service, the display and the storage through three small delegates.
 
 ```dart
 InAppNotifications.setup(
-  messaging: FcmMessaging(),          // MessagingDelegate: Firebase Cloud Messaging, say
-  display: LocalDisplay(),            // DisplayDelegate: a local notifications plugin, say
+  messaging: FcmMessaging(),          // NotificationMessagingDelegate: Firebase Cloud Messaging, say
+  display: LocalDisplay(),            // NotificationDisplayDelegate: a local notifications plugin, say
   tokens: FirestoreTokens(),          // TokenStoreDelegate: accounts/{uid}/devices/{token}, say
   onError: (error, stack, where) => crashlytics.recordError(error, stack, reason: where),
   unreachable: (error) => error is TimeoutException,
@@ -27,14 +27,14 @@ InAppNotifications.opened.addListener(() {
   the phone (`saved` / `remember`), so a launch writes nothing. A refreshed token is saved and the old one removed.
   `clear` removes it from the account and lets it go (`forgetToken`), so pushes to it stop even when the removal
   couldn't reach the server.
-- **Shown while open**: each push from `MessagingDelegate.received` with a title or a body goes to
-  `DisplayDelegate.show` (which does nothing where the platform shows it itself, as iOS does).
+- **Shown while open**: each push from `NotificationMessagingDelegate.received` with a title or a body goes to
+  `NotificationDisplayDelegate.show` (which does nothing where the platform shows it itself, as iOS does).
 - **Inside the app instead**: with `setup(visibility: LocalNotificationVisibility.inApp)`, such a push goes to
   `InAppNotifications.inApp` (the newest replaces the one before) and not to the notification bar; the app shows it
   (a banner at its top, say) and calls `open()` when it is tapped or `dismiss()` when it goes. In the background or
   closed, the system shows it in the notification bar either way.
-- **Tapped**: a push tapped in the background (`MessagingDelegate.tapped`), one that started the app (`initial`), and
-  one shown while open (`DisplayDelegate.tapped` / `initial`) all put their data in `opened`, which waits until the app
+- **Tapped**: a push tapped in the background (`NotificationMessagingDelegate.tapped`), one that started the app (`initial`), and
+  one shown while open (`NotificationDisplayDelegate.tapped` / `initial`) all put their data in `opened`, which waits until the app
   is ready to `take` it.
 - **Errors**: every delegate call is caught; `onError` gets it unless `unreachable` says it was only offline.
 

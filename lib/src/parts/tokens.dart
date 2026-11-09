@@ -1,6 +1,6 @@
 import 'dart:async' show StreamSubscription, unawaited;
 
-import '../delegates/messaging_delegate.dart';
+import '../delegates/notification_messaging_delegate.dart';
 import '../delegates/token_store_delegate.dart';
 
 /// The signed-in account's token on this phone: saved when new or changed, moved when the phone is given another, and
@@ -8,7 +8,7 @@ import '../delegates/token_store_delegate.dart';
 class Tokens {
   Tokens(this._messaging, this._store, this._run);
 
-  final MessagingDelegate _messaging;
+  final NotificationMessagingDelegate _messaging;
   final TokenStoreDelegate _store;
 
   /// Runs a step; false when it failed (reported by the caller's rules).

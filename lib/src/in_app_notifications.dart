@@ -2,9 +2,9 @@ import 'dart:async' show unawaited;
 
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 
-import 'delegates/display_delegate.dart';
+import 'delegates/notification_display_delegate.dart';
 import 'delegates/error_reporter.dart';
-import 'delegates/messaging_delegate.dart';
+import 'delegates/notification_messaging_delegate.dart';
 import 'delegates/token_store_delegate.dart';
 import 'enums/local_notification_visibility.dart';
 import 'models/push_message.dart';
@@ -22,8 +22,8 @@ class InAppNotifications {
   /// [visibility]: where a push that comes while the app is open shows. [unreachable]: the error only says the backend
   /// couldn't be reached (offline), so it isn't reported.
   static void setup({
-    required MessagingDelegate messaging,
-    required DisplayDelegate display,
+    required NotificationMessagingDelegate messaging,
+    required NotificationDisplayDelegate display,
     required TokenStoreDelegate tokens,
     LocalNotificationVisibility visibility = LocalNotificationVisibility.system,
     ErrorReporter? onError,
@@ -71,8 +71,8 @@ class _Kit {
     tokens = Tokens(messaging, store, run);
   }
 
-  final MessagingDelegate messaging;
-  final DisplayDelegate display;
+  final NotificationMessagingDelegate messaging;
+  final NotificationDisplayDelegate display;
   final LocalNotificationVisibility visibility;
   final ErrorReporter? onError;
   final bool Function(Object error)? unreachable;

@@ -1,3 +1,8 @@
+## 0.3.0
+
+- **Breaking**: `DisplayDelegate` is `NotificationDisplayDelegate` and `MessagingDelegate` is
+  `NotificationMessagingDelegate`, so their names say what they are for next to the app's other delegates.
+
 ## 0.2.0
 
 - **Where a push shows while the app is open**: `setup(visibility: LocalNotificationVisibility.inApp)` puts it in

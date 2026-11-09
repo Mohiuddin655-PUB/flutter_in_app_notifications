@@ -1,7 +1,7 @@
 import '../models/push_message.dart';
 
 /// Shows a push on the phone while the app is open, given by the app (a local notifications plugin, say).
-abstract interface class DisplayDelegate {
+abstract interface class NotificationDisplayDelegate {
   /// Once, before anything is shown (channels, permissions already asked elsewhere).
   Future<void> init();
 
