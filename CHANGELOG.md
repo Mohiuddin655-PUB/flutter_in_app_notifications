@@ -1,3 +1,8 @@
+## 0.12.5
+
+- **The status bar follows a gradient card too**: under the status bar, a card with a gradient sets its icons by its
+  colours mixed (before, only a plain colour counted, so a bright gradient kept dark icons by the theme's surface).
+
 ## 0.12.4
 
 - **The banner follows the finger exactly from the first touch**: it tracks the finger's own position, not the drag's

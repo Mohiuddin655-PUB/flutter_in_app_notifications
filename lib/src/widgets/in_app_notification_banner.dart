@@ -117,7 +117,7 @@ class InAppNotificationBanner extends StatelessWidget {
     // (the region moves with it, dragged or leaving). Kept clear of it, the page's stay.
     final covered = style.safeArea
         ? card
-        : AnnotatedRegion<SystemUiOverlayStyle>(value: style.statusBarStyle ?? _statusBarFor(decoration.color ?? theme.colorScheme.surface), child: card);
+        : AnnotatedRegion<SystemUiOverlayStyle>(value: style.statusBarStyle ?? _statusBarFor(_tone(decoration) ?? theme.colorScheme.surface), child: card);
 
     // The gate sits above the app's pages, outside any Material: the reply field and buttons need one.
     final material = Material(type: MaterialType.transparency, child: covered);
@@ -125,6 +125,19 @@ class InAppNotificationBanner extends StatelessWidget {
     // Its own layer: moving, fading or dragged, it repaints alone, not the page under it.
     final layered = RepaintBoundary(child: shown);
     return style.safeArea ? SafeArea(child: layered) : layered;
+  }
+
+  /// The card's colour under the status bar: its colour, or its gradient's colours mixed.
+  static Color? _tone(BoxDecoration decoration) {
+    final colors = decoration.gradient?.colors;
+    if (decoration.color != null || colors == null || colors.isEmpty) return decoration.color;
+    var r = 0.0, g = 0.0, b = 0.0;
+    for (final c in colors) {
+      r += c.r;
+      g += c.g;
+      b += c.b;
+    }
+    return Color.from(alpha: 1, red: r / colors.length, green: g / colors.length, blue: b / colors.length);
   }
 
   /// Dark icons on a light card, light on a dark one.
