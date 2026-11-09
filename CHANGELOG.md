@@ -1,3 +1,7 @@
+## 0.12.8
+
+- The README links the banner's looks as a live page (raw.githack), to open in a browser and play its arrival.
+
 ## 0.12.7
 
 - **Sharper README pictures**: the banner's looks at three times the resolution, three to a row, and the real app's at

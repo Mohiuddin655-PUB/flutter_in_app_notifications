@@ -8,8 +8,9 @@ service, the display and the storage through three small delegates.
   <img src="https://raw.githubusercontent.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/images/banner_looks.png" width="760" alt="Every look of the in-app banner, each with the call that makes it">
 </p>
 
-<sub>Every look of the in-app banner, each with the call that makes it. Open
-[doc/banner_looks.html](doc/banner_looks.html) in a browser to play its arrival.</sub>
+<sub>Every look of the in-app banner, each with the call that makes it.
+**[Open it live in your browser](https://raw.githack.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/banner_looks.html)**
+and play its arrival (the page itself: [doc/banner_looks.html](doc/banner_looks.html)).</sub>
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/images/banner_looks_ios.png" width="760" alt="The same looks in a real app on an iPhone">
