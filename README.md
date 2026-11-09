@@ -48,6 +48,34 @@ InAppNotifications.opened.addListener(() {
 3. [iOS setup](doc/ios_setup.md): the APNs key in Firebase, Push Notifications and Background Modes, the AppDelegate,
    which plugins not to add, and testing on a simulator.
 
+### Native checklist
+
+The Dart side needs nothing native; the plugins the app picks do. With FCM and flutter_local_notifications:
+
+**Android**
+
+| File | What |
+| --- | --- |
+| `android/app/google-services.json` | the app's Firebase config |
+| `android/app/build.gradle.kts` | `isCoreLibraryDesugaringEnabled = true` and `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")` |
+| `AndroidManifest.xml` | `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED` permissions |
+| `AndroidManifest.xml` | the `ScheduledNotificationReceiver` and `ScheduledNotificationBootReceiver` receivers (scheduled notifications) |
+| `AndroidManifest.xml` | FCM's `default_notification_channel_id`, `default_notification_icon`, `default_notification_color` |
+| `res/drawable*/ic_stat.png` | a white-on-transparent small icon; `res/values/colors.xml` its colour |
+
+**iOS**
+
+| Where | What |
+| --- | --- |
+| Firebase console › Cloud Messaging | the APNs authentication key (`.p8`), Key ID and Team ID |
+| `ios/Runner/GoogleService-Info.plist` | the app's Firebase config |
+| Xcode › Signing & Capabilities | Push Notifications (`aps-environment`: development / production) |
+| `ios/Runner/Info.plist` | `UIBackgroundModes` › `remote-notification` |
+| `ios/Runner/AppDelegate.swift` | `UNUserNotificationCenter.current().delegate = self` before `super.application(...)` |
+| Pubspec | no plugin that takes the notification delegate for every notification (`awesome_notifications`) |
+
+Each line is explained in the platform guide.
+
 ## How it works
 
 - **Token**: asked at `start`, saved through `TokenStoreDelegate.save` only when it differs from the copy last saved on

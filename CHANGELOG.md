@@ -1,3 +1,7 @@
+## 0.6.2
+
+- **Native checklist** in the README: every Android and iOS file to change, and what goes in it.
+
 ## 0.6.1
 
 - **Setup guides**: `doc/app_setup.md` (the delegates and everything the app wires up), `doc/android_setup.md` and
