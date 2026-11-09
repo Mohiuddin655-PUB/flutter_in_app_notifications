@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
 import '../in_app_notifications.dart';
 import '../models/notification_action.dart';
@@ -129,25 +130,37 @@ class InAppNotificationBanner extends StatelessWidget {
       ],
     );
 
+    final decoration =
+        style.decoration ??
+        BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 16, offset: Offset(0, 4))],
+        );
     final card =
         container?.call(context, body) ??
         Container(
           margin: style.margin ?? const EdgeInsets.all(12),
           padding: style.padding ?? const EdgeInsets.all(14),
-          decoration:
-              style.decoration ??
-              BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 16, offset: Offset(0, 4))],
-              ),
+          decoration: decoration,
           child: body,
         );
+    // Under the status bar, its icons follow the banner while it covers them, and the page's again once it has gone
+    // (the region moves with it, dragged or leaving). Kept clear of it, the page's stay.
+    final covered = style.safeArea
+        ? card
+        : AnnotatedRegion<SystemUiOverlayStyle>(value: style.statusBarStyle ?? _statusBarFor(decoration.color ?? theme.colorScheme.surface), child: card);
 
     // The gate sits above the app's pages, outside any Material: the reply field and buttons need one.
-    final material = Material(type: MaterialType.transparency, child: card);
+    final material = Material(type: MaterialType.transparency, child: covered);
     final shown = InAppNotificationDrag(key: ValueKey(message.id), enabled: style.dismissible, onDismiss: onDismiss, child: material);
     return style.safeArea ? SafeArea(child: shown) : shown;
+  }
+
+  /// Dark icons on a light card, light on a dark one.
+  static SystemUiOverlayStyle _statusBarFor(Color card) {
+    final light = card.computeLuminance() > 0.5;
+    return (light ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light).copyWith(statusBarColor: const Color(0x00000000));
   }
 
   Widget? get _image {

@@ -1,3 +1,9 @@
+## 0.12.1
+
+- **The status bar follows the banner while it covers it**: with `safeArea: false` (drawn under the status bar) its
+  icons are dark on a light card and light on a dark one (`statusBarStyle` to choose), and the page's again once the
+  banner has moved off it, dragged or leaving. Kept clear of it, nothing changes.
+
 ## 0.12.0
 
 - **`InAppNotifications.show()`: the banner alone**: shows a message in the app's banner (`InAppNotificationGate`)

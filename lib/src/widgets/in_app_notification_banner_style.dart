@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
 /// How `InAppNotificationBanner` looks: every value optional; a missing one falls back to the app's theme. Give the
 /// app's own design values here, or replace a whole part with the banner's builders.
@@ -21,6 +22,7 @@ class InAppNotificationBannerStyle {
     this.replyTextStyle,
     this.dismissible = true,
     this.safeArea = true,
+    this.statusBarStyle,
   });
 
   /// Around the card (from the screen's edges).
@@ -54,6 +56,10 @@ class InAppNotificationBannerStyle {
   /// False: it can't be swiped away (up).
   final bool dismissible;
 
-  /// Kept clear of the status bar and notch.
+  /// Kept clear of the status bar and notch. False draws it from the very top, under the status bar.
   final bool safeArea;
+
+  /// The status bar's icons while it covers them ([safeArea] false): by default dark on a light card and light on a
+  /// dark one. Kept clear of it, the page's own stay.
+  final SystemUiOverlayStyle? statusBarStyle;
 }
