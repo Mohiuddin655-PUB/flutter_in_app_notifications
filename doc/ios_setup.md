@@ -52,7 +52,36 @@ Everything else (a tap, the settings link) goes on to the app delegate.
 - Don't let flutter_local_notifications ask for the permission (`DarwinInitializationSettings(request...Permission:
   false)`): the app asks when it is needed (app_setup.md step 6).
 
-## 4. How iOS behaves (for testing)
+## 4. A push's image (Notification Service Extension)
+
+iOS shows a push's image only through a Notification Service Extension, a target of the app's own that no package can
+add. The package does its work; the app keeps only:
+
+1. Xcode › File › New › Target › Notification Service Extension, named `NotificationService` (bundle id
+   `<app id>.NotificationService`, the app's deployment target and team). Its `NotificationService.swift` becomes:
+
+```swift
+import InAppNotificationsService
+
+class NotificationService: InAppNotificationService {}
+```
+
+2. In `ios/Podfile`, outside the Runner target:
+
+```ruby
+target 'NotificationService' do
+  use_frameworks!
+  pod 'InAppNotificationsService', :path => '.symlinks/plugins/in_app_notifications/ios'
+end
+```
+
+3. In Runner's Build Phases, move **Embed Foundation Extensions** above **Thin Binary** (Flutter's script), or the
+   build stops with a cycle.
+
+The push then carries `mutable-content: 1` (`apns.payload.aps.mutable-content`) and its image in the data (`image`) or
+in FCM's `apns.fcm_options.image`.
+
+## 5. How iOS behaves (for testing)
 
 - The FCM token waits for Apple's (APNs) token, which can take a moment after launch: `token()` gives up after a few
   tries and the refresh stream brings it later.

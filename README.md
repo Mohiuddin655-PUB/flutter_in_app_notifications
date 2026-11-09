@@ -91,6 +91,7 @@ What only the app can do, because no package can:
 | Xcode › Signing & Capabilities | Push Notifications, and Background Modes › Remote notifications |
 | `ios/Runner/AppDelegate.swift` | `UNUserNotificationCenter.current().delegate = self` before `super.application(...)` (so taps reach the plugins) |
 | Pubspec | no plugin that takes the notification delegate for every notification (`awesome_notifications`) |
+| Xcode + `ios/Podfile` | for a push's image: a `NotificationService` extension of one line (`class NotificationService: InAppNotificationService {}`) and the `InAppNotificationsService` pod on it (ios_setup.md §4) |
 
 Each line is explained in the platform guide.
 

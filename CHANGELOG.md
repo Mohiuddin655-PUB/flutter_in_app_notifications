@@ -1,3 +1,9 @@
+## 0.9.1
+
+- **iOS: a push's image from the package**: `InAppNotificationService` (pod `InAppNotificationsService`, no Flutter)
+  does the work of the app's Notification Service Extension; the app's extension is one line,
+  `class NotificationService: InAppNotificationService {}`, and its Podfile adds the pod to that target.
+
 ## 0.9.0
 
 - **Rich notifications**: `PushMessage` carries an `image`, a `group` (a chat's thread), a `category` (its actions), a
