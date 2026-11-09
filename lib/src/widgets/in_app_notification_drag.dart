@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/physics.dart' show SpringDescription, SpringSimulation;
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import '../in_app_notifications.dart';
@@ -99,23 +100,112 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
         onVerticalDragStart: widget.enabled ? _start : null,
         onVerticalDragUpdate: widget.enabled ? _update : null,
         onVerticalDragEnd: widget.enabled ? _end : null,
-        child: AnimatedBuilder(
-          animation: _offset,
-          child: widget.child,
-          builder: (context, child) {
-            final y = _offset.value;
-            // How far out it is: fades and shrinks with it, exactly as far as it has moved.
-            final out = (-y / (_height + 24)).clamp(0.0, 1.0);
-            return Transform.translate(
-              offset: Offset(0, y),
-              child: Opacity(
-                opacity: 1 - out,
-                child: Transform.scale(scale: 1 - 0.06 * out, alignment: Alignment.topCenter, child: child),
-              ),
-            );
-          },
-        ),
+        // Driven straight from the drag: a frame moves, fades and scales it without building anything again.
+        child: _Follow(offset: _offset, height: () => _height, child: widget.child),
       ),
     );
   }
+}
+
+/// The banner where the drag has it: moved by [offset], and faded and shrunk as far as it is out. Painted, not built:
+/// each frame only sets the transform and the opacity.
+class _Follow extends StatelessWidget {
+  const _Follow({required this.offset, required this.height, required this.child});
+
+  final Animation<double> offset;
+  final double Function() height;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final out = _Out(offset, height);
+    return _Translate(
+      offset: offset,
+      child: FadeTransition(
+        opacity: _Fade(out),
+        child: ScaleTransition(scale: _Shrink(out), alignment: Alignment.topCenter, child: child),
+      ),
+    );
+  }
+}
+
+/// How far out it is, 0 in its place to 1 gone.
+class _Out extends Animation<double> with AnimationWithParentMixin<double> {
+  _Out(this.parent, this.height);
+
+  @override
+  final Animation<double> parent;
+  final double Function() height;
+
+  @override
+  double get value => (-parent.value / (height() + 24)).clamp(0.0, 1.0);
+}
+
+class _Fade extends Animation<double> with AnimationWithParentMixin<double> {
+  _Fade(this.parent);
+
+  @override
+  final Animation<double> parent;
+
+  @override
+  double get value => 1 - parent.value;
+}
+
+class _Shrink extends Animation<double> with AnimationWithParentMixin<double> {
+  _Shrink(this.parent);
+
+  @override
+  final Animation<double> parent;
+
+  @override
+  double get value => 1 - 0.06 * parent.value;
+}
+
+/// Moved by [offset] pixels down (up when negative), repainted on each change without a build.
+class _Translate extends SingleChildRenderObjectWidget {
+  const _Translate({required this.offset, super.child});
+
+  final Animation<double> offset;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderTranslate(offset);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderTranslate renderObject) => renderObject.offset = offset;
+}
+
+class _RenderTranslate extends RenderProxyBox {
+  _RenderTranslate(this._offset);
+
+  Animation<double> _offset;
+  set offset(Animation<double> value) {
+    if (value == _offset) return;
+    if (attached) _offset.removeListener(markNeedsPaint);
+    _offset = value;
+    if (attached) _offset.addListener(markNeedsPaint);
+    markNeedsPaint();
+  }
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _offset.addListener(markNeedsPaint);
+  }
+
+  @override
+  void detach() {
+    _offset.removeListener(markNeedsPaint);
+    super.detach();
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    return result.addWithPaintOffset(offset: Offset(0, _offset.value), position: position, hitTest: (r, p) => super.hitTestChildren(r, position: p));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) => super.paint(context, offset + Offset(0, _offset.value));
+
+  @override
+  void applyPaintTransform(RenderBox child, Matrix4 transform) => transform.translateByDouble(0, _offset.value, 0, 1);
 }

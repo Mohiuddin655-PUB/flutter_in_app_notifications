@@ -1,3 +1,9 @@
+## 0.12.2
+
+- **Lighter on the device**: the banner's coming, going and drag are transitions and a paint-only translate, so a
+  frame moves, fades and scales it without building anything again; the banner paints on its own layer, so the page
+  under it isn't repainted while it moves; its image is decoded at the size it shows.
+
 ## 0.12.1
 
 - **The status bar follows the banner while it covers it**: with `safeArea: false` (drawn under the status bar) its

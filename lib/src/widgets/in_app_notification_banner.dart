@@ -66,23 +66,17 @@ class InAppNotificationBanner extends StatelessWidget {
   /// How it goes: up, shrinking a little and fading out, quicker at the end.
   static const leave = Cubic(0.55, 0, 0.75, 0.6);
 
-  /// Its coming and going, as Discord's: for `InAppNotificationGate.transitionBuilder` (the gate's default).
+  /// Its coming and going, as Discord's: for `InAppNotificationGate.transitionBuilder` (the gate's default). Built
+  /// from transitions, so a frame only repaints and moves it, nothing is built again.
   static Widget transition(Widget child, Animation<double> animation) {
     final move = CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped);
     final fade = CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut), reverseCurve: Curves.easeIn);
-    return AnimatedBuilder(
-      animation: animation,
-      child: child,
-      builder: (context, child) {
-        final t = move.value;
-        return FractionalTranslation(
-          translation: Offset(0, t - 1),
-          child: Opacity(
-            opacity: fade.value.clamp(0.0, 1.0),
-            child: Transform.scale(scale: 0.92 + 0.08 * t, alignment: Alignment.topCenter, child: child),
-          ),
-        );
-      },
+    return SlideTransition(
+      position: Tween(begin: const Offset(0, -1), end: Offset.zero).animate(move),
+      child: FadeTransition(
+        opacity: fade,
+        child: ScaleTransition(scale: Tween(begin: 0.92, end: 1.0).animate(move), alignment: Alignment.topCenter, child: child),
+      ),
     );
   }
 
@@ -101,11 +95,12 @@ class InAppNotificationBanner extends StatelessWidget {
     final actions = showActions ? InAppNotifications.category(message.category)?.actions ?? const <NotificationAction>[] : const <NotificationAction>[];
     final reply = actions.where((a) => a.input).firstOrNull;
     final buttons = actions.where((a) => !a.input).toList();
+    final image = _image(context);
 
     final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (leading != null) ...[leading!(context, message), SizedBox(width: gap)] else if (_image != null) ...[_image!, SizedBox(width: gap)],
+        if (leading != null) ...[leading!(context, message), SizedBox(width: gap)] else if (image != null) ...[image, SizedBox(width: gap)],
         Expanded(child: content?.call(context, message) ?? _texts(theme)),
         if (trailing != null) trailing!(context, message),
       ],
@@ -154,7 +149,9 @@ class InAppNotificationBanner extends StatelessWidget {
     // The gate sits above the app's pages, outside any Material: the reply field and buttons need one.
     final material = Material(type: MaterialType.transparency, child: covered);
     final shown = InAppNotificationDrag(key: ValueKey(message.id), enabled: style.dismissible, onDismiss: onDismiss, child: material);
-    return style.safeArea ? SafeArea(child: shown) : shown;
+    // Its own layer: moving, fading or dragged, it repaints alone, not the page under it.
+    final layered = RepaintBoundary(child: shown);
+    return style.safeArea ? SafeArea(child: layered) : layered;
   }
 
   /// Dark icons on a light card, light on a dark one.
@@ -163,11 +160,15 @@ class InAppNotificationBanner extends StatelessWidget {
     return (light ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light).copyWith(statusBarColor: const Color(0x00000000));
   }
 
-  Widget? get _image {
+  Widget? _image(BuildContext context) {
     final size = style.imageSize ?? 44;
     final src = message.image;
     if (src == null || src.isEmpty) return null;
-    final image = src.startsWith('http') ? Image.network(src, width: size, height: size, fit: BoxFit.cover) : null;
+    // Decoded at the size it shows, not the picture's own.
+    final pixels = (size * MediaQuery.devicePixelRatioOf(context)).round();
+    final image = src.startsWith('http')
+        ? Image.network(src, width: size, height: size, fit: BoxFit.cover, cacheWidth: pixels, cacheHeight: pixels)
+        : null;
     if (image == null) return null;
     return ClipRRect(borderRadius: style.imageRadius ?? BorderRadius.circular(8), child: image);
   }
