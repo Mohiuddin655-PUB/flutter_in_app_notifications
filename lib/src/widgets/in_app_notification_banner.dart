@@ -4,6 +4,7 @@ import '../in_app_notifications.dart';
 import '../models/notification_action.dart';
 import '../models/push_message.dart';
 import 'in_app_notification_banner_style.dart';
+import 'in_app_notification_drag.dart';
 import 'in_app_notification_reply_field.dart';
 
 /// Builds one action's button: [onPressed] answers with it.
@@ -57,7 +58,34 @@ class InAppNotificationBanner extends StatelessWidget {
   /// False shows no actions or reply field.
   final bool showActions;
 
-  /// A slide down from the top as it comes, and back up as it goes: for `InAppNotificationGate.transitionBuilder`.
+  /// How it comes: down from above its place, growing from a little smaller and fading in, a touch past its place and
+  /// back, so it lands softly.
+  static const arrive = Cubic(0.16, 1.22, 0.3, 1);
+
+  /// How it goes: up, shrinking a little and fading out, quicker at the end.
+  static const leave = Cubic(0.55, 0, 0.75, 0.6);
+
+  /// Its coming and going, as Discord's: for `InAppNotificationGate.transitionBuilder` (the gate's default).
+  static Widget transition(Widget child, Animation<double> animation) {
+    final move = CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped);
+    final fade = CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut), reverseCurve: Curves.easeIn);
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        final t = move.value;
+        return FractionalTranslation(
+          translation: Offset(0, t - 1),
+          child: Opacity(
+            opacity: fade.value.clamp(0.0, 1.0),
+            child: Transform.scale(scale: 0.92 + 0.08 * t, alignment: Alignment.topCenter, child: child),
+          ),
+        );
+      },
+    );
+  }
+
+  /// A plain slide down from the top, and back up.
   static Widget slideTransition(Widget child, Animation<double> animation) {
     return SlideTransition(
       position: Tween(begin: const Offset(0, -1), end: Offset.zero).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
@@ -118,9 +146,7 @@ class InAppNotificationBanner extends StatelessWidget {
 
     // The gate sits above the app's pages, outside any Material: the reply field and buttons need one.
     final material = Material(type: MaterialType.transparency, child: card);
-    final shown = style.dismissible
-        ? Dismissible(key: ValueKey(message.id), direction: style.dismissDirection, onDismissed: (_) => onDismiss(), child: material)
-        : material;
+    final shown = InAppNotificationDrag(key: ValueKey(message.id), enabled: style.dismissible, onDismiss: onDismiss, child: material);
     return style.safeArea ? SafeArea(child: shown) : shown;
   }
 

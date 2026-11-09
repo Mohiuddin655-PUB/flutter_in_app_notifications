@@ -28,7 +28,7 @@ class _InAppNotificationReplyFieldState extends State<InAppNotificationReplyFiel
     _focus.addListener(_held);
   }
 
-  void _held() => InAppNotifications.hold(_focus.hasFocus);
+  void _held() => InAppNotifications.hold(_focus.hasFocus, reason: _focus);
 
   @override
   void dispose() {

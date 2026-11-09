@@ -3,6 +3,7 @@ import 'dart:async' show Timer;
 import 'package:flutter/widgets.dart';
 
 import '../in_app_notifications.dart';
+import 'in_app_notification_banner.dart';
 import '../models/push_message.dart';
 
 /// What shows for a push [message] inside the app: [onOpen] when it is tapped, [onDismiss] when it is swiped away.
@@ -18,11 +19,11 @@ class InAppNotificationGate extends StatefulWidget {
     super.key,
     required this.builder,
     required this.child,
-    this.transitionBuilder = AnimatedSwitcher.defaultTransitionBuilder,
+    this.transitionBuilder = InAppNotificationBanner.transition,
     this.alignment = AlignmentDirectional.topCenter,
     this.showFor = const Duration(seconds: 4),
-    this.enter = const Duration(milliseconds: 280),
-    this.exit = const Duration(milliseconds: 200),
+    this.enter = const Duration(milliseconds: 460),
+    this.exit = const Duration(milliseconds: 240),
   });
 
   final InAppNotificationBuilder builder;

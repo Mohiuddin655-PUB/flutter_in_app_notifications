@@ -1,3 +1,15 @@
+## 0.11.0
+
+- **The banner moves as Discord's**: it comes down from above, fading in and growing from a little smaller, a touch
+  past its place and back (`InAppNotificationBanner.arrive`); it goes up, shrinking and fading
+  (`InAppNotificationBanner.leave`). This is the gate's default transition (`InAppNotificationBanner.transition`;
+  enter 460 ms, exit 240 ms).
+- **Held and dragged** (`InAppNotificationDrag`): a finger on it holds it; dragged it follows the finger exactly (up
+  one to one, down only a little); let go far enough up or flung, it carries on out from where it is at the finger's
+  speed, fading and shrinking as far as it has gone; let go short of that, it springs back from where it is.
+- **Breaking**: `InAppNotifications.hold(on, reason:)` holds by reason (a reply being typed and a finger on it are two),
+  and `InAppNotificationBannerStyle.dismissDirection` is gone (it is swiped up; `dismissible: false` turns it off).
+
 ## 0.10.1
 
 - **The banner's reply field works**: `InAppNotificationBanner` brings its own `Material` (the gate sits outside the

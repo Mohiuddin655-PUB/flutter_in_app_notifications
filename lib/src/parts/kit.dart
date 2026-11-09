@@ -50,8 +50,20 @@ class Kit {
   final opened = ValueNotifier<Map<String, String>?>(null);
   final inApp = ValueNotifier<PushMessage?>(null);
 
-  /// The app's banner is being used (a reply typed): it doesn't go by itself until let go.
+  /// The app's banner is being used (a reply typed, a finger on it): it doesn't go by itself until every reason has
+  /// let go.
   final holding = ValueNotifier<bool>(false);
+  final _holds = <Object>{};
+
+  void hold(Object reason, bool on) {
+    on ? _holds.add(reason) : _holds.remove(reason);
+    holding.value = _holds.isNotEmpty;
+  }
+
+  void releaseAll() {
+    _holds.clear();
+    holding.value = false;
+  }
   bool _ready = false;
 
   Future<void> init() async {

@@ -19,7 +19,6 @@ class InAppNotificationBannerStyle {
     this.destructiveActionStyle,
     this.replyDecoration,
     this.replyTextStyle,
-    this.dismissDirection = DismissDirection.up,
     this.dismissible = true,
     this.safeArea = true,
   });
@@ -52,10 +51,7 @@ class InAppNotificationBannerStyle {
   final InputDecoration? replyDecoration;
   final TextStyle? replyTextStyle;
 
-  /// Which way it is swiped away.
-  final DismissDirection dismissDirection;
-
-  /// False: it can't be swiped away.
+  /// False: it can't be swiped away (up).
   final bool dismissible;
 
   /// Kept clear of the status bar and notch.

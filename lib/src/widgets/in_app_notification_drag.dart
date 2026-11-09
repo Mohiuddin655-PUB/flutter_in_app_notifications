@@ -1,0 +1,121 @@
+import 'dart:math' as math;
+
+import 'package:flutter/physics.dart' show SpringDescription, SpringSimulation;
+import 'package:flutter/widgets.dart';
+
+import '../in_app_notifications.dart';
+
+/// Lets the banner be held and swiped up, as Discord's do. A finger on it holds it (it doesn't go by itself); dragged,
+/// it follows the finger exactly (up one to one; down only a little, ever harder). Let go far enough up, or flung up,
+/// it carries on out from where it is, at the finger's speed, fading and shrinking as it goes, then [onDismiss]; let go
+/// short of that, it springs back from where it is.
+class InAppNotificationDrag extends StatefulWidget {
+  const InAppNotificationDrag({super.key, required this.onDismiss, required this.child, this.enabled = true});
+
+  final VoidCallback onDismiss;
+  final Widget child;
+
+  /// False: it can't be dragged (a finger on it still holds it).
+  final bool enabled;
+
+  @override
+  State<InAppNotificationDrag> createState() => _InAppNotificationDragState();
+}
+
+class _InAppNotificationDragState extends State<InAppNotificationDrag> with SingleTickerProviderStateMixin {
+  /// How far it is from its place, in pixels (up is negative).
+  late final _offset = AnimationController.unbounded(vsync: this);
+
+  double _height = 1;
+  bool _leaving = false;
+
+  /// Up past this share of its height, a let-go carries it out.
+  static const _outShare = 0.35;
+
+  /// Flung up faster than this (pixels a second), it goes whatever the distance.
+  static const _flingSpeed = 600.0;
+
+  static const _spring = SpringDescription(mass: 1, stiffness: 520, damping: 34);
+
+  @override
+  void dispose() {
+    InAppNotifications.hold(false, reason: this);
+    _offset.dispose();
+    super.dispose();
+  }
+
+  void _down(PointerDownEvent _) {
+    if (!_leaving) InAppNotifications.hold(true, reason: this);
+  }
+
+  void _up(PointerEvent _) {
+    // Still in its place (a tap, a hold): it goes on its time again. Dragged, the let-go decides.
+    if (!_leaving && !_offset.isAnimating && _offset.value == 0) InAppNotifications.hold(false, reason: this);
+  }
+
+  void _start(DragStartDetails _) {
+    _offset.stop();
+    _height = math.max(context.size?.height ?? 1, 1);
+  }
+
+  void _update(DragUpdateDetails d) {
+    if (_leaving) return;
+    final y = _offset.value;
+    final dy = d.delta.dy;
+    // Up: exactly with the finger. Down past its place: ever less, as if held by a spring.
+    _offset.value = (y + dy <= 0 || dy < 0) && y <= 0 ? y + dy : y + dy / (1 + math.max(y, 0) / 24);
+  }
+
+  void _end(DragEndDetails d) {
+    if (_leaving) return;
+    final speed = d.velocity.pixelsPerSecond.dy;
+    final out = _offset.value < -_height * _outShare || speed < -_flingSpeed;
+    if (!out) {
+      // Back from where it is, with the finger's speed.
+      _offset.animateWith(SpringSimulation(_spring, _offset.value, 0, speed)).whenComplete(() {
+        if (mounted) InAppNotifications.hold(false, reason: this);
+      });
+      return;
+    }
+    _leaving = true;
+    // Out from where it is: the rest of the way past the top, starting at the finger's speed (ease-out starts three
+    // times its average speed), so nothing jumps.
+    final target = -(_height + MediaQuery.paddingOf(context).top + 24);
+    final distance = (target - _offset.value).abs();
+    final start = math.max(-speed, 900);
+    final ms = (3 * distance / start * 1000).clamp(120, 360).round();
+    _offset.animateTo(target, duration: Duration(milliseconds: ms), curve: Curves.easeOutCubic).whenComplete(() {
+      if (mounted) widget.onDismiss();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: _down,
+      onPointerUp: _up,
+      onPointerCancel: _up,
+      child: GestureDetector(
+        onVerticalDragStart: widget.enabled ? _start : null,
+        onVerticalDragUpdate: widget.enabled ? _update : null,
+        onVerticalDragEnd: widget.enabled ? _end : null,
+        child: AnimatedBuilder(
+          animation: _offset,
+          child: widget.child,
+          builder: (context, child) {
+            final y = _offset.value;
+            // How far out it is: fades and shrinks with it, exactly as far as it has moved.
+            final out = (-y / (_height + 24)).clamp(0.0, 1.0);
+            return Transform.translate(
+              offset: Offset(0, y),
+              child: Opacity(
+                opacity: 1 - out,
+                child: Transform.scale(scale: 1 - 0.06 * out, alignment: Alignment.topCenter, child: child),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
