@@ -16,6 +16,18 @@ await InAppNotifications.init();      // at launch
 InAppNotifications.start(uid);        // at sign-in, or a launch still signed in
 await InAppNotifications.clear();     // before sign-out, while the account can still write
 
+// With visibility: LocalNotificationVisibility.inApp, a push while the app is open shows inside it:
+MaterialApp(
+  builder: (context, child) => InAppNotificationGate(
+    builder: (context, message, onOpen, onDismiss) => MyBanner(message, onTap: onOpen, onSwipe: onDismiss),
+    transitionBuilder: (child, animation) => SlideTransition(
+      position: Tween(begin: const Offset(0, -1), end: Offset.zero).animate(animation),
+      child: child,
+    ),
+    child: child!,
+  ),
+);
+
 InAppNotifications.opened.addListener(() {
   final data = InAppNotifications.take(); // {'page': 'chats', ...}
 });

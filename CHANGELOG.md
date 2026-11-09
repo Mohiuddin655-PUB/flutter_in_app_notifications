@@ -1,3 +1,10 @@
+## 0.4.0
+
+- **`InAppNotificationGate`**: wraps the app and shows a push that comes while it is open
+  (`LocalNotificationVisibility.inApp`) with the app's own `builder`: the newest replaces the one showing, it goes by
+  itself after `showFor`, and comes and goes through the app's `transitionBuilder` (`enter`, `exit`), at once with
+  animations turned off on the phone. `alignment` places it (the top by default).
+
 ## 0.3.0
 
 - **Breaking**: `DisplayDelegate` is `NotificationDisplayDelegate` and `MessagingDelegate` is
