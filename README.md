@@ -61,6 +61,10 @@ await InAppNotifications.notify(message: PushMessage(
 // A push does the same through its data: {category, group, image, sound, badge, urgent, expanded} (NotificationKeys);
 // on iOS also send aps.category for its actions, and add a Notification Service Extension for its image.
 
+// The banner alone (nothing in the notification bar, no push): a message the app tells itself.
+InAppNotifications.show(title: 'Saved', body: 'Your profile is up to date');
+InAppNotifications.show(message: PushMessage(id: 'match-7', title: 'A match!', category: 'request', data: {'page': 'likes'}));
+
 // A notification made on the phone: now, or scheduled.
 await InAppNotifications.notify(id: 'streak', title: 'Keep your streak', data: {'page': 'home'});
 await InAppNotifications.notify(id: 'reminder', title: 'See who liked you', at: DateTime(2026, 11, 10, 9), data: {'page': 'likes'});

@@ -100,6 +100,15 @@ class InAppNotifications {
     return _k.run(() async => _k.present(shown, local: true), 'notify');
   }
 
+  /// Only the app's banner (`InAppNotificationGate`), with nothing in the notification bar and no push: a message the
+  /// app tells itself (a saved change, a match found). Its actions and a tap work as any other's. [message] says how it
+  /// shows; [id], [title], [body] and [data] are the short way for a plain one.
+  static void show({String? id, String? title, String? body, Map<String, String> data = const {}, PushMessage? message}) {
+    assert(message != null || id != null || title != null, 'show needs a message, an id or a title');
+    _k.releaseAll();
+    _k.inApp.value = message ?? PushMessage(id: id ?? 'banner-${title.hashCode}', title: title, body: body, data: data);
+  }
+
   /// The notification made on the phone with [id] taken away, shown or still waiting.
   static Future<bool> cancel(String id) => _k.run(() async {
     await _k.schedules.remove(id);

@@ -1,3 +1,9 @@
+## 0.12.0
+
+- **`InAppNotifications.show()`: the banner alone**: shows a message in the app's banner (`InAppNotificationGate`)
+  with nothing in the notification bar and no push, whatever the visibility; its actions and a tap work as any
+  other's.
+
 ## 0.11.1
 
 - **Android: a notification answered with a typed reply goes**: Android holds one a moment after a direct reply and
