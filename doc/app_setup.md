@@ -477,6 +477,11 @@ notification and takes the banner and its copy in the bar away. For a reply type
 `InAppNotifications.hold(true)` when its field is focused, so the banner doesn't go while typing; an answer, a tap or a
 dismiss lets it go.
 
+Or use the package's `InAppNotificationBanner`, which does all of that, and change how it looks from the app: its
+`style` (`InAppNotificationBannerStyle`: margins, padding, the card's decoration, text styles, image size and corners,
+gaps, button styles, the reply field's decoration, swipe direction, safe area), and builders that replace a part whole
+(`leading`, `content`, `trailing`, `actionBuilder`, `replyBuilder`, `container`).
+
 ### 9.7 After an answer
 
 The kit takes an answered notification away (Android leaves one answered with a reply on screen). A background handler

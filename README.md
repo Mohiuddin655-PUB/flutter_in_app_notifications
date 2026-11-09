@@ -16,17 +16,29 @@ await InAppNotifications.init();      // at launch
 InAppNotifications.start(uid);        // at sign-in, or a launch still signed in
 await InAppNotifications.clear();     // before sign-out, while the account can still write
 
-// With visibility: LocalNotificationVisibility.inApp, a push while the app is open shows inside it:
+// With visibility: LocalNotificationVisibility.inApp, a notification while the app is open shows inside it. The
+// package's banner does the work (actions, a reply field that holds it, tap, swipe); every visible part is the app's:
 MaterialApp(
   builder: (context, child) => InAppNotificationGate(
-    builder: (context, message, onOpen, onDismiss) => MyBanner(message, onTap: onOpen, onSwipe: onDismiss),
-    transitionBuilder: (child, animation) => SlideTransition(
-      position: Tween(begin: const Offset(0, -1), end: Offset.zero).animate(animation),
-      child: child,
+    builder: (context, message, onOpen, onDismiss) => InAppNotificationBanner(
+      message: message,
+      onOpen: onOpen,
+      onDismiss: onDismiss,
+      style: InAppNotificationBannerStyle(
+        decoration: BoxDecoration(color: myCard, borderRadius: BorderRadius.circular(20)),
+        titleStyle: myTitle,
+        bodyStyle: myBody,
+        actionStyle: TextButton.styleFrom(foregroundColor: myAccent),
+      ),
+      leading: (context, message) => MyAvatar(message),         // optional: replace a part whole
+      actionBuilder: (context, action, onPressed) => MyChip(action.title, onTap: onPressed),
     ),
+    transitionBuilder: InAppNotificationBanner.slideTransition,
     child: child!,
   ),
 );
+// Or a banner entirely the app's own: any widget, with InAppNotifications.category(message.category) for its
+// actions, InAppNotifications.answer(actionId, input:) to answer, and InAppNotifications.hold(true) while typing.
 
 // Actions: each kind of notification names what it offers; every answer comes to onAction, in the background too.
 InAppNotifications.setup(

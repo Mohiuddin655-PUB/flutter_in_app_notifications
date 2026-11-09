@@ -15,4 +15,7 @@ export 'src/in_app_notifications.dart';
 export 'src/models/notification_action.dart';
 export 'src/models/notification_answer.dart';
 export 'src/models/push_message.dart';
+export 'src/widgets/in_app_notification_banner.dart';
+export 'src/widgets/in_app_notification_banner_style.dart';
 export 'src/widgets/in_app_notification_gate.dart';
+export 'src/widgets/in_app_notification_reply_field.dart';

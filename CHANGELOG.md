@@ -1,3 +1,12 @@
+## 0.10.0
+
+- **`InAppNotificationBanner`, a ready banner for the gate**: the message's title and body, its image, its category's
+  actions as buttons and a reply field (`InAppNotificationReplyField`, holding the banner while typed in); a tap opens
+  it, a swipe dismisses it. Every visible part is the app's to change: `InAppNotificationBannerStyle` (margins,
+  padding, the card's decoration, text styles, image size and corners, gaps, button styles, the reply field's
+  decoration, swipe direction, safe area), and builders that replace a part whole (`leading`, `content`, `trailing`,
+  `actionBuilder`, `replyBuilder`, `container`). `InAppNotificationBanner.slideTransition` for the gate.
+
 ## 0.9.6
 
 - **An answered notification goes**: after an action (a reply, Accept), its notification is taken away; Android left
