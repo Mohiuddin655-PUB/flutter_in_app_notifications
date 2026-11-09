@@ -13,4 +13,7 @@ abstract interface class NotificationDisplayDelegate {
 
   /// The data of the shown push whose tap started the app; null when none did.
   Future<Map<String, String>?> initial();
+
+  /// Every push the phone still shows for this app taken away (sign-out), so none is tapped for the next account.
+  Future<void> clearShown();
 }

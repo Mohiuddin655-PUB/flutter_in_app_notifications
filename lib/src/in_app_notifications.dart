@@ -38,8 +38,9 @@ class InAppNotifications {
   /// [uid] is signed in (a login, or a launch still signed in): its token is kept on the account.
   static void start(String uid) => _k.tokens.start(uid);
 
-  /// Before sign-out or deleting the account, while it may still write: its token is taken off and let go.
-  static Future<void> clear() => _k.tokens.clear();
+  /// Before sign-out or deleting the account, while it may still write: its token is taken off and let go, and what it
+  /// was told goes with it (a tapped push not yet taken, the one showing inside the app, those in the notification bar).
+  static Future<void> clear() => _k.clear();
 
   /// The data of the push last tapped, until [take]n.
   static ValueListenable<Map<String, String>?> get opened => _k.opened;
@@ -90,6 +91,13 @@ class _Kit {
     display.tapped.listen(open);
     await run(() async => open((await messaging.initial())?.data), 'initial push');
     await run(() async => open(await display.initial()), 'initial shown push');
+  }
+
+  Future<void> clear() async {
+    opened.value = null;
+    inApp.value = null;
+    await run(display.clearShown, 'clear shown');
+    await tokens.clear();
   }
 
   void _received(PushMessage message) {

@@ -1,3 +1,10 @@
+## 0.5.0
+
+- **Sign-out forgets what the account was told**: `InAppNotifications.clear()` also drops a tapped push not yet taken
+  and the one showing inside the app, and asks the display to take away every push still in the notification bar, so
+  none opens a page for the next account.
+- **Breaking**: `NotificationDisplayDelegate.clearShown()`, the app's way to take its shown pushes away.
+
 ## 0.4.0
 
 - **`InAppNotificationGate`**: wraps the app and shows a push that comes while it is open

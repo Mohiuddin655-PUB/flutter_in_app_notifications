@@ -38,7 +38,8 @@ InAppNotifications.opened.addListener(() {
 - **Token**: asked at `start`, saved through `TokenStoreDelegate.save` only when it differs from the copy last saved on
   the phone (`saved` / `remember`), so a launch writes nothing. A refreshed token is saved and the old one removed.
   `clear` removes it from the account and lets it go (`forgetToken`), so pushes to it stop even when the removal
-  couldn't reach the server.
+  couldn't reach the server; it also drops a tapped push not yet taken and every push still shown
+  (`NotificationDisplayDelegate.clearShown`), so none opens a page for the next account.
 - **Shown while open**: each push from `NotificationMessagingDelegate.received` with a title or a body goes to
   `NotificationDisplayDelegate.show` (which does nothing where the platform shows it itself, as iOS does).
 - **Inside the app instead**: with `setup(visibility: LocalNotificationVisibility.inApp)`, such a push goes to
