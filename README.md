@@ -50,29 +50,24 @@ InAppNotifications.opened.addListener(() {
 
 ### Native checklist
 
-The Dart side needs nothing native; the plugins the app picks do. With FCM and flutter_local_notifications:
+The package is a plugin: it brings its own native setup, so the app adds **nothing for it**:
 
-**Android**
+- Android: the `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED` permissions and flutter_local_notifications'
+  scheduled-notification receivers come in through the package's manifest.
+- iOS: the package answers how a notification shows while the app is open (a push as Firebase's options say, kept in
+  the list when the app shows its own banner; one made on the phone as it asks), and passes everything else on.
 
-| File | What |
-| --- | --- |
-| `android/app/google-services.json` | the app's Firebase config |
-| `android/app/build.gradle.kts` | `isCoreLibraryDesugaringEnabled = true` and `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")` |
-| `AndroidManifest.xml` | `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED` permissions |
-| `AndroidManifest.xml` | the `ScheduledNotificationReceiver` and `ScheduledNotificationBootReceiver` receivers (scheduled notifications) |
-| `AndroidManifest.xml` | FCM's `default_notification_channel_id`, `default_notification_icon`, `default_notification_color` |
-| `res/drawable*/ic_stat.png` | a white-on-transparent small icon; `res/values/colors.xml` its colour |
-
-**iOS**
+What only the app can do, because no package can:
 
 | Where | What |
 | --- | --- |
+| `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist` | the app's Firebase config |
+| `android/app/build.gradle.kts` | `isCoreLibraryDesugaringEnabled = true` and `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")` (flutter_local_notifications needs it) |
+| `AndroidManifest.xml` | FCM's `default_notification_channel_id`, `default_notification_icon`, `default_notification_color` (optional, recommended) |
+| `res/drawable*/ic_stat.png` | a white-on-transparent small icon; `res/values/colors.xml` its colour |
 | Firebase console › Cloud Messaging | the APNs authentication key (`.p8`), Key ID and Team ID |
-| `ios/Runner/GoogleService-Info.plist` | the app's Firebase config |
-| Xcode › Signing & Capabilities | Push Notifications (`aps-environment`: development / production) |
-| `ios/Runner/Info.plist` | `UIBackgroundModes` › `remote-notification` |
-| `ios/Runner/AppDelegate.swift` | `UNUserNotificationCenter.current().delegate = self` before `super.application(...)` |
-| `ios/Runner/AppDelegate.swift` | `willPresent`: a push as Firebase's options say (kept in the list when the app shows its own banner); one made on the phone as it asks |
+| Xcode › Signing & Capabilities | Push Notifications, and Background Modes › Remote notifications |
+| `ios/Runner/AppDelegate.swift` | `UNUserNotificationCenter.current().delegate = self` before `super.application(...)` (so taps reach the plugins) |
 | Pubspec | no plugin that takes the notification delegate for every notification (`awesome_notifications`) |
 
 Each line is explained in the platform guide.

@@ -25,8 +25,8 @@ What an iOS app needs for `in_app_notifications` with Firebase Cloud Messaging a
 
 ## 3. `ios/Runner/AppDelegate.swift`
 
-Firebase Messaging and flutter_local_notifications both work through `UNUserNotificationCenter`'s delegate; the
-Flutter app delegate passes its calls on to them:
+Make the app delegate the notification center's delegate, so taps reach Firebase Messaging and
+flutter_local_notifications (the Flutter app delegate passes the calls on to the plugins):
 
 ```swift
 override func application(_ application: UIApplication,
@@ -36,40 +36,19 @@ override func application(_ application: UIApplication,
 }
 ```
 
-While the app is open, iOS asks how each notification shows. The Flutter app delegate asks every plugin and **the first
-answer wins**, and Firebase Messaging answers for every notification, the app's own included, with the options set for
-pushes. With `inApp` (alert off) a notification the app made itself (`InAppNotifications.notify`, now or scheduled)
-would then show nowhere: no banner, not even in the list. Answer for those in the AppDelegate and leave pushes to
-Firebase:
+Nothing else: the package's plugin then puts itself in front and answers how a notification shows while the app is
+open. The Flutter app delegate asks every plugin and the first answer wins, and Firebase Messaging answers for every
+notification with the options set for pushes, which with `inApp` would hide a notification the app made itself
+completely. The plugin answers instead:
 
-```swift
-override func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                     willPresent notification: UNNotification,
-                                     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-    let info = notification.request.content.userInfo
-    if info["gcm.message_id"] != nil { // a push
-        let firebase = UserDefaults.standard.dictionary(forKey: "flutter_firebase_messaging_presentation_options")
-        if (firebase?["alert"] as? Bool) == true {
-            super.userNotificationCenter(center, willPresent: notification, withCompletionHandler: completionHandler)
-        } else {
-            completionHandler([.list, .badge]) // the app shows its own banner; keep it in the list, quietly
-        }
-        return
-    }
-    // Made on the phone: as flutter_local_notifications asks (quiet ones go into the list only).
-    var options: UNNotificationPresentationOptions = []
-    if (info["presentBanner"] as? Bool) ?? true { options.insert(.banner) }
-    if (info["presentList"] as? Bool) ?? true { options.insert(.list) }
-    if (info["presentSound"] as? Bool) ?? true { options.insert(.sound) }
-    if (info["presentBadge"] as? Bool) ?? true { options.insert(.badge) }
-    completionHandler(options)
-}
-```
+- a push (it carries `gcm.message_id`): as `setForegroundNotificationPresentationOptions` says; with the banner off
+  (the app shows its own) it still goes into the list, quietly;
+- a notification made on the phone: as flutter_local_notifications asks for it (`notify(quiet:)` puts it into the list
+  only).
 
-- A push then shows while open as `setForegroundNotificationPresentationOptions` says (alert off with `inApp`, so it
-  shows once, as the app's banner).
-- Don't add a plugin that takes the delegate for **every** notification (such as `awesome_notifications`): it shows the
-  system banner over the app's own banner, whatever the options say.
+Everything else (a tap, the settings link) goes on to the app delegate.
+
+- Don't add a plugin that takes the delegate for **every** notification (such as `awesome_notifications`).
 - Don't let flutter_local_notifications ask for the permission (`DarwinInitializationSettings(request...Permission:
   false)`): the app asks when it is needed (app_setup.md step 6).
 

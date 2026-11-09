@@ -1,3 +1,10 @@
+## 0.8.0
+
+- **A plugin, so the app's native side stays small**: Android's `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED`
+  permissions and flutter_local_notifications' scheduled-notification receivers come in through the package's
+  manifest; on iOS the package answers how a notification shows while the app is open (no AppDelegate override). Still
+  no dependencies. Apps drop those lines from their own manifest and AppDelegate.
+
 ## 0.7.0
 
 - **Every notification shows the same way while the app is open**, push or made on the phone: with

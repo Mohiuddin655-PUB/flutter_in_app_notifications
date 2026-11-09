@@ -1,3 +1,8 @@
 .dart_tool/
 build/
 pubspec.lock
+
+# Android build files
+android/.gradle/
+android/local.properties
+*.iml

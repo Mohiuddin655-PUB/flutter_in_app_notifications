@@ -1,6 +1,6 @@
 name: in_app_notifications
 description: "Push notifications for any backend: the device token kept on the signed-in account, a push shown while the app is open, and the page a tapped one opens. No dependencies; the app gives the messaging, display and storage through delegates."
-version: 0.7.0
+version: 0.8.0
 repository: https://github.com/Mohiuddin655-PUB/flutter_in_app_notifications
 issue_tracker: https://github.com/Mohiuddin655-PUB/flutter_in_app_notifications/issues
 topics: [notifications, push, fcm, token]
@@ -14,3 +14,14 @@ dependencies:
 
 dev_dependencies:
   flutter_lints: ^6.0.0
+
+flutter:
+  # Native setup the app would otherwise do itself: Android's permissions and flutter_local_notifications' receivers
+  # (its manifest), and iOS's answer to how a notification shows while the app is open.
+  plugin:
+    platforms:
+      android:
+        package: com.mohiuddin655.in_app_notifications
+        pluginClass: InAppNotificationsPlugin
+      ios:
+        pluginClass: InAppNotificationsPlugin

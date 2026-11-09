@@ -29,42 +29,24 @@ dependencies {
 
 ## 3. `android/app/src/main/AndroidManifest.xml`
 
+The package's own manifest already brings in the `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED` permissions and
+flutter_local_notifications' two scheduled-notification receivers (without them a scheduled notification's alarm goes
+off and nothing shows); the app adds nothing for them. What the app may add is what the system uses for a push it
+shows itself (app in the background or closed):
+
 ```xml
-<manifest ...>
-    <!-- Android 13+: nothing shows in the notification bar without it (asked at run time, see app_setup.md step 6). -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Scheduled notifications come back after a restart. -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
-    <application ...>
-        <!-- Without these two, a scheduled notification's alarm goes off and nothing shows: the plugin doesn't
-             declare them itself. -->
-        <receiver
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
-            android:exported="false" />
-        <receiver
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-            </intent-filter>
-        </receiver>
-
-        <!-- What the system uses for a push it shows itself (app in the background or closed). The channel id is the
-             one the display delegate creates, so pushes and the app's own notifications share one channel. -->
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="updates" />
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_stat" />
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@color/notification_color" />
-    </application>
-</manifest>
+<application ...>
+    <!-- The channel id is the one the display delegate creates, so pushes and the app's own notifications share it. -->
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_channel_id"
+        android:value="updates" />
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_stat" />
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_color"
+        android:resource="@color/notification_color" />
+</application>
 ```
 
 - `ic_stat` is a **white-on-transparent** small icon in `res/drawable*` (a coloured icon shows as a grey square).
