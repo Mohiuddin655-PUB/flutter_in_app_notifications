@@ -31,12 +31,9 @@ class Schedules {
     if (text != null && text.isNotEmpty) {
       for (final e in jsonDecode(text) as List) {
         final m = e as Map;
-        final message = PushMessage(
-          id: '${m['id']}',
-          title: m['title'] as String?,
-          body: m['body'] as String?,
-          data: {for (final d in (m['data'] as Map? ?? const {}).entries) '${d.key}': '${d.value}'},
-        );
+        // Kept whole (its image, actions, sound, look); one kept by an earlier version has only its id, title, body
+        // and data, read the same way.
+        final message = PushMessage.fromJson(m);
         _pending[message.id] = (message: message, at: DateTime.fromMillisecondsSinceEpoch(m['at'] as int, isUtc: true));
       }
     }
@@ -118,8 +115,7 @@ class Schedules {
     final store = _store;
     if (store == null) return;
     final list = [
-      for (final p in _pending.values)
-        {'id': p.message.id, 'title': p.message.title, 'body': p.message.body, 'data': p.message.data, 'at': p.at.millisecondsSinceEpoch},
+      for (final p in _pending.values) {...p.message.toJson(), 'at': p.at.millisecondsSinceEpoch},
     ];
     await _run(() => store.write(list.isEmpty ? null : jsonEncode(list)), 'save schedules');
   }

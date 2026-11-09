@@ -3,8 +3,8 @@ import 'package:flutter/widgets.dart';
 
 import '../enums/banner_edge.dart';
 
-/// The banner where the drag has it: moved by [offset], and faded and shrunk as far as it is out. Painted, not built:
-/// each frame only sets the transform and the opacity.
+/// The banner where the drag has it: moved by [offset], and faded and shrunk as far as it is out. A frame doesn't
+/// build the banner again: the move is only painted, the fade and shrink are transitions.
 class InAppNotificationFollow extends StatelessWidget {
   const InAppNotificationFollow({super.key, required this.offset, required this.height, this.edge = BannerEdge.top, required this.child});
 

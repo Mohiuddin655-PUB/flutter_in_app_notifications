@@ -1,28 +1,3 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Android 13+: nothing shows in the notification bar without it (the app asks for it at run time). -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Scheduled notifications come back after a restart. -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
-    <application>
-        <!-- flutter_local_notifications' receivers, which it doesn't declare itself: without them a scheduled
-             notification's alarm goes off and nothing shows, and an action's button does nothing. Used only when the
-             app has that plugin. -->
-        <receiver
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
-            android:exported="false" />
-        <!-- An action on a notification (Reply, Accept): without it the buttons do nothing. -->
-        <receiver
-            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
-            android:exported="false" />
-        <receiver
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-            </intent-filter>
-        </receiver>
-    </application>
-</manifest>
+<!-- Nothing of its own: an app with flutter_local_notifications gets src/localNotifications' in its place
+     (build.gradle.kts). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

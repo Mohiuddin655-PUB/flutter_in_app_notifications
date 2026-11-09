@@ -27,6 +27,9 @@ class InAppNotifications {
 
   static Kit? _kit;
 
+  /// Each [show] without an id is a banner of its own.
+  static var _shown = 0;
+
   static Kit get _k => _kit ?? (throw StateError('InAppNotifications.setup must be called first (only the banner works without it).'));
 
   // ---- Setup: only for pushes and the phone's notifications ----
@@ -47,6 +50,9 @@ class InAppNotifications {
     ErrorReporter? onError,
     bool Function(Object error)? unreachable,
   }) {
+    // Once: a second kit would listen again, and show each push twice.
+    assert(_kit == null, 'InAppNotifications.setup is called once');
+    if (_kit != null) return;
     _kit = Kit(messaging, display, tokens, schedules, categories, _b, whileOpen, now ?? DateTime.now, onError, unreachable)..responses.handler = onAction;
   }
 
@@ -58,7 +64,11 @@ class InAppNotifications {
 
   /// Before sign-out or deleting the account, while it may still write: its token is taken off and let go, and what it
   /// was told goes with it (a tapped one not yet taken, the banner, those in the notification bar).
-  static Future<void> clear() => _k.clear();
+  /// Without [setup], only the banner's are let go.
+  static Future<void> clear() async {
+    final kit = _kit;
+    kit == null ? _b.clear() : await kit.clear();
+  }
 
   /// A notification made on the phone (a reminder, say), in the notification bar: now, at [at] (a plain time, such as
   /// `DateTime(2026, 11, 10, 10)` for 10am), or [after] a while (scheduled; it shows even when the app is closed).
@@ -95,8 +105,7 @@ class InAppNotifications {
   /// `InAppNotificationGate.looks` ('toast', 'snackbar', 'popup' or the app's own); the gate's own look when null.
   static void show({String? id, String? title, String? body, Map<String, String> data = const {}, PushMessage? message, String? look}) {
     assert(message != null || id != null || title != null, 'show needs a message, an id or a title');
-    final shown = message ?? PushMessage(id: id ?? 'banner-${title.hashCode}', title: title, body: body, data: data);
-    _b.releaseAll();
+    final shown = message ?? PushMessage(id: id ?? 'banner-${_shown++}', title: title, body: body, data: data);
     _b.inApp.value = look == null ? shown : shown.copyWith(look: look);
   }
 

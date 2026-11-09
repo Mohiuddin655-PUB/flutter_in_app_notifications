@@ -1,0 +1,29 @@
+<!-- Used in place of src/main's only when the app has flutter_local_notifications (build.gradle.kts): an app
+     without it (the banner alone, say) would crash on these receivers, and needs none of these permissions. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Android 13+: nothing shows in the notification bar without it (the app asks for it at run time). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Scheduled notifications come back after a restart. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application>
+        <!-- flutter_local_notifications' receivers, which it doesn't declare itself: without them a scheduled
+             notification's alarm goes off and nothing shows, and an action's button does nothing. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <!-- An action on a notification (Reply, Accept): without it the buttons do nothing. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

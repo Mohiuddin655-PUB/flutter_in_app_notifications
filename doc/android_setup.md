@@ -29,9 +29,10 @@ dependencies {
 
 ## 3. `android/app/src/main/AndroidManifest.xml`
 
-The package's own manifest already brings in the `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED` permissions and
-flutter_local_notifications' two scheduled-notification receivers (without them a scheduled notification's alarm goes
-off and nothing shows); the app adds nothing for them. What the app may add is what the system uses for a push it
+When the app has flutter_local_notifications, the package's own manifest brings in the `POST_NOTIFICATIONS` and
+`RECEIVE_BOOT_COMPLETED` permissions and that plugin's receivers (scheduled notifications, actions, after a restart;
+without them a scheduled notification's alarm goes off and nothing shows); the app adds nothing for them. An app
+without that plugin (the banner alone) gets none of them. What the app may add is what the system uses for a push it
 shows itself (app in the background or closed):
 
 ```xml

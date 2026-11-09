@@ -32,7 +32,10 @@ class _InAppNotificationReplyFieldState extends State<InAppNotificationReplyFiel
 
   @override
   void dispose() {
+    // The banner went (sent, dismissed, its time up): the keyboard goes with it.
+    if (_focus.hasFocus) _focus.unfocus();
     _focus.removeListener(_held);
+    InAppNotifications.hold(false, reason: _focus);
     _text.dispose();
     _focus.dispose();
     super.dispose();

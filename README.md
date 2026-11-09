@@ -194,8 +194,8 @@ comes up from there, and is swiped down to go.
 
 The package is a plugin: it brings its own native setup, so the app adds **nothing for it**:
 
-- Android: the `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED` permissions and flutter_local_notifications'
-  scheduled-notification receivers come in through the package's manifest.
+- Android: with flutter_local_notifications in the app, the `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED`
+  permissions and that plugin's receivers come in through the package's manifest (an app without it gets none).
 - iOS: the package answers how a notification shows while the app is open (a push as Firebase's options say, kept in
   the list when the app shows its own banner; one made on the phone as it asks), and passes everything else on.
 

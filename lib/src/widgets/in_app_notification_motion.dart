@@ -12,19 +12,26 @@ abstract final class InAppNotificationMotion {
   static const leave = Cubic(0.55, 0, 0.75, 0.6);
 
   /// Its coming and going, as Discord's: for `InAppNotificationGate.transitionBuilder` (the gate's default). Built
-  /// from transitions, so a frame only repaints and moves it, nothing is built again.
+  /// from transitions: a frame moves, fades and scales the banner without building it again.
   static Widget transition(Widget child, Animation<double> animation) => transitionAt(BannerEdge.top)(child, animation);
 
   /// [transition] for a banner at [edge]: in from that edge and back out to it.
   static AnimatedSwitcherTransitionBuilder transitionAt(BannerEdge edge) =>
       (child, animation) => _move(child, animation, edge);
 
+  /// The curves made for each banner's animation, once: a transition built again (its banner rebuilt) reuses them
+  /// rather than adding new ones to the animation each time. They go with it.
+  static final _moves = Expando<(CurvedAnimation, CurvedAnimation)>();
+  static final _pops = Expando<(CurvedAnimation, CurvedAnimation)>();
+
   static Widget _move(Widget child, Animation<double> animation, BannerEdge edge) {
-    final move = CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped);
-    final fade = CurvedAnimation(
-      parent: animation,
-      curve: const Interval(0, 0.6, curve: Curves.easeOut),
-      reverseCurve: Curves.easeIn,
+    final (move, fade) = _moves[animation] ??= (
+      CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped),
+      CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0, 0.6, curve: Curves.easeOut),
+        reverseCurve: Curves.easeIn,
+      ),
     );
     return SlideTransition(
       position: Tween(begin: Offset(0, edge.outward), end: Offset.zero).animate(move),
@@ -38,11 +45,13 @@ abstract final class InAppNotificationMotion {
   /// A popup's coming and going: in place, growing from a little smaller and fading in, a touch past its size; back
   /// out shrinking and fading.
   static Widget pop(Widget child, Animation<double> animation) {
-    final grow = CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped);
-    final fade = CurvedAnimation(
-      parent: animation,
-      curve: const Interval(0, 0.5, curve: Curves.easeOut),
-      reverseCurve: Curves.easeIn,
+    final (grow, fade) = _pops[animation] ??= (
+      CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped),
+      CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0, 0.5, curve: Curves.easeOut),
+        reverseCurve: Curves.easeIn,
+      ),
     );
     return FadeTransition(
       opacity: fade,

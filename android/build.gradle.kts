@@ -1,5 +1,5 @@
 group = "com.mohiuddin655.in_app_notifications"
-version = "0.8.0"
+version = "0.15.0"
 
 buildscript {
     val kotlinVersion = "2.4.0"
@@ -38,6 +38,11 @@ android {
     sourceSets {
         getByName("main") {
             java.srcDirs("src/main/kotlin")
+            // flutter_local_notifications' receivers and the notification permissions, only for an app that has
+            // that plugin: declared without it, its receivers crash the app on install, update or restart.
+            if (rootProject.findProject(":flutter_local_notifications") != null) {
+                manifest.srcFile("src/localNotifications/AndroidManifest.xml")
+            }
         }
     }
 

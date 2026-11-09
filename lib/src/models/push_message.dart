@@ -40,6 +40,49 @@ class PushMessage {
     );
   }
 
+  /// Everything it holds, to be kept (a scheduled one between launches) and read back with [PushMessage.fromJson].
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'title': title,
+    'body': body,
+    'data': data,
+    'image': image,
+    'group': group,
+    'category': category,
+    'channel': channel,
+    'sound': sound,
+    'badge': badge,
+    if (progress case final p?) 'progress': [p.value, p.max, p.indeterminate],
+    'ongoing': ongoing,
+    'expanded': expanded,
+    'urgent': urgent,
+    'look': look,
+  };
+
+  /// One kept with [toJson].
+  factory PushMessage.fromJson(Map<Object?, Object?> json) {
+    final progress = json['progress'];
+    return PushMessage(
+      id: '${json['id']}',
+      title: json['title'] as String?,
+      body: json['body'] as String?,
+      data: {for (final e in (json['data'] as Map? ?? const {}).entries) '${e.key}': '${e.value}'},
+      image: json['image'] as String?,
+      group: json['group'] as String?,
+      category: json['category'] as String?,
+      channel: json['channel'] as String?,
+      sound: json['sound'] as String?,
+      badge: json['badge'] as int?,
+      progress: progress is List && progress.length == 3
+          ? NotificationProgress(value: progress[0] as int, max: progress[1] as int, indeterminate: progress[2] as bool)
+          : null,
+      ongoing: json['ongoing'] == true,
+      expanded: json['expanded'] == true,
+      urgent: json['urgent'] == true,
+      look: json['look'] as String?,
+    );
+  }
+
   /// The same notification with what is given changed.
   PushMessage copyWith({
     String? id,

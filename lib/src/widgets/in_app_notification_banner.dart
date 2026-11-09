@@ -1,3 +1,5 @@
+import 'dart:io' show File;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
@@ -99,7 +101,16 @@ class InAppNotificationBanner extends StatelessWidget {
         if (reply != null) ...[SizedBox(height: gap), InAppNotificationReplyField(action: reply, style: style, builder: replyBuilder)],
         if (buttons.isNotEmpty) ...[
           SizedBox(height: gap / 2),
-          Row(mainAxisAlignment: style.actionsAlignment ?? MainAxisAlignment.end, children: [for (final a in buttons) _button(context, a)]),
+          // Side by side; one under another when they don't fit across.
+          OverflowBar(
+            alignment: style.actionsAlignment ?? MainAxisAlignment.end,
+            overflowAlignment: switch (style.actionsAlignment) {
+              MainAxisAlignment.start => OverflowBarAlignment.start,
+              MainAxisAlignment.center => OverflowBarAlignment.center,
+              _ => OverflowBarAlignment.end,
+            },
+            children: [for (final a in buttons) _button(context, a)],
+          ),
         ],
       ],
     );
@@ -121,11 +132,13 @@ class InAppNotificationBanner extends StatelessWidget {
         : AnnotatedRegion<SystemUiOverlayStyle>(value: style.statusBarStyle ?? _statusBarFor(_tone(decoration) ?? theme.colorScheme.surface), child: card);
 
     // The gate sits above the app's pages, outside any Material: the reply field and buttons need one.
-    final material = Material(type: MaterialType.transparency, child: covered);
+    // Its own layer, under the drag: moved, faded or dragged, the card is drawn once and its picture moved, and the
+    // page under it isn't drawn again.
+    final material = RepaintBoundary(
+      child: Material(type: MaterialType.transparency, child: covered),
+    );
     final shown = InAppNotificationDrag(key: ValueKey(message.id), enabled: style.dismissible, onDismiss: onDismiss, child: material);
-    // Its own layer: moving, fading or dragged, it repaints alone, not the page under it.
-    final layered = RepaintBoundary(child: shown);
-    return style.safeArea ? SafeArea(child: layered) : layered;
+    return style.safeArea ? SafeArea(child: shown) : shown;
   }
 
   /// The card's colour under the status bar: its colour, or its gradient's colours mixed.
@@ -151,10 +164,11 @@ class InAppNotificationBanner extends StatelessWidget {
     final size = style.imageSize ?? 44;
     final src = message.image;
     if (src == null || src.isEmpty) return null;
-    // Decoded at the size it shows, not the picture's own.
+    // Decoded at the width it shows, not the picture's own; its height follows, so it isn't squashed.
     final pixels = (size * MediaQuery.devicePixelRatioOf(context)).round();
-    final image = src.startsWith('http') ? Image.network(src, width: size, height: size, fit: BoxFit.cover, cacheWidth: pixels, cacheHeight: pixels) : null;
-    if (image == null) return null;
+    final image = src.startsWith('http')
+        ? Image.network(src, width: size, height: size, fit: BoxFit.cover, cacheWidth: pixels)
+        : Image.file(File(src), width: size, height: size, fit: BoxFit.cover, cacheWidth: pixels);
     return ClipRRect(borderRadius: style.imageRadius ?? BorderRadius.circular(8), child: image);
   }
 

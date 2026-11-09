@@ -14,6 +14,16 @@ void main() {
       ],
     ),
     NotificationCategory(
+      id: 'many',
+      actions: [
+        NotificationAction(id: 'like', title: 'Like'),
+        NotificationAction(id: 'save', title: 'Save for later'),
+        NotificationAction(id: 'share', title: 'Share with friends'),
+        NotificationAction(id: 'mute', title: 'Mute'),
+        NotificationAction(id: 'report', title: 'Report', destructive: true),
+      ],
+    ),
+    NotificationCategory(
       id: 'undo',
       actions: [NotificationAction(id: 'undo', title: 'Undo')],
     ),
@@ -114,6 +124,12 @@ class _HomeState extends State<_Home> {
               OutlinedButton(
                 onPressed: () => InAppNotifications.show(title: 'Copied', look: 'toast'),
                 child: const Text('Toast'),
+              ),
+              OutlinedButton(
+                onPressed: () => InAppNotifications.show(
+                  message: const PushMessage(id: 'post', title: 'New post from Nadia', category: 'many'),
+                ),
+                child: const Text('Many actions'),
               ),
               OutlinedButton(
                 onPressed: () => InAppNotifications.show(

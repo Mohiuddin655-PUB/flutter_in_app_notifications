@@ -35,6 +35,13 @@ class BannerState {
     holding.value = false;
   }
 
+  /// Sign-out: nothing of the last account's stays (its tapped one, its banner).
+  void clear() {
+    opened.value = null;
+    releaseAll();
+    inApp.value = null;
+  }
+
   void open(Map<String, String>? data) {
     if (data != null && data.isNotEmpty) opened.value = data;
   }

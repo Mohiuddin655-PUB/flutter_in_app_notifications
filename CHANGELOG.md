@@ -1,3 +1,23 @@
+## 0.15.0
+
+- **Fix (Android): an app without flutter_local_notifications crashed** on install, update or restart: the package
+  declared that plugin's receivers for every app. They, and the notification permissions, are now added only when the
+  app has that plugin.
+- **Fix: the reply field couldn't be focused on Android** (no Overlay above the Navigator, where the gate sits): the
+  gate has its own. **A banner at the bottom sits above the keyboard**, and the keyboard goes with the banner.
+- **Fix: a banner on its way out no longer acts on the next one** (a tap, an action or the end of its swipe opened or
+  dismissed the new banner): it can't be touched while leaving, and its callbacks act on it alone.
+- **Fix: a new banner no longer lets go of a reply being typed**; holds go with the banner that has them. `show()`
+  without an id makes a banner of its own each time (two with the same title collided).
+- **Fix: scheduled notifications keep everything after a relaunch** (image, actions, channel, sound, look):
+  `PushMessage.toJson`/`fromJson`.
+- `setup()` is called once (a second call is ignored, asserted in debug); `clear()` works without setup (the banner's).
+- Actions sit side by side, and one under another when they don't fit (`OverflowBar`).
+- Fewer builds and paints: the keyboard moving or the screen changing no longer rebuilds the banner; transitions
+  reuse their curves; a drag moves the card's cached picture. The image decodes at its width without being squashed,
+  and a file path shows too.
+- Versions agree: Android and the iOS pods are 0.15.0.
+
 ## 0.14.0
 
 - **Named looks of the same banner**: `InAppNotificationGate(looks: {...})` keeps `BannerLook`s by name, and

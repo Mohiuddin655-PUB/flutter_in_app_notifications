@@ -102,9 +102,7 @@ class Kit {
   }
 
   Future<void> clear() async {
-    banner.opened.value = null;
-    banner.releaseAll();
-    banner.inApp.value = null;
+    banner.clear();
     await run(schedules.clear, 'clear schedules');
     await run(display.clearShown, 'clear shown');
     await tokens.clear();
@@ -122,7 +120,7 @@ class Kit {
       await (local ? display.notify(message) : display.show(message));
       return;
     }
-    banner.releaseAll();
+    // A hold stays with the banner that has it: one in use (a reply typed) and replaced lets go as it goes.
     banner.inApp.value = message;
     if (whileOpen.keepsInBar) await (local ? display.notify(message, quiet: true) : display.keep(message));
   }
