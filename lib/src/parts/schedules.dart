@@ -5,9 +5,10 @@ import '../delegates/notification_display_delegate.dart';
 import '../delegates/schedule_store_delegate.dart';
 import '../models/push_message.dart';
 
-/// The notifications scheduled on the phone. While the app is in front they wait on timers here, and the phone's own
-/// alarms are taken away, so their time shows them inside the app ([_due]); once it leaves the front (the app switcher
-/// too) they go back to the phone, which shows them even when the app is closed. Kept in [_store] between launches.
+/// The notifications scheduled on the phone. The phone's own alarm is always set, so one shows even if the app dies
+/// in front (a crash, a kill). While the app is in front a timer here also waits: just before the time it takes the
+/// phone's alarm away ([_handOver] early) and at the time shows it inside the app ([_due]). When the app leaves the
+/// front the alarms are set again. Kept in [_store] between launches.
 class Schedules {
   Schedules(this._display, this._store, this._now, this._run, this._due);
 
@@ -20,6 +21,9 @@ class Schedules {
   final _pending = <String, ({PushMessage message, DateTime at})>{};
   final _timers = <String, Timer>{};
   bool _open = true;
+
+  /// How long before its time the phone's alarm is taken away while the app is in front.
+  static const _handOver = Duration(seconds: 2);
 
   /// At launch, the app on screen: what is still to come waits here.
   Future<void> load() async {
@@ -43,7 +47,8 @@ class Schedules {
     _timers.remove(message.id)?.cancel();
     _pending[message.id] = (message: message, at: at.toUtc());
     await _save();
-    _open ? _wait(message.id) : await _run(() => _display.notify(message, at: at), 'schedule');
+    await _run(() => _display.notify(message, at: at), 'schedule');
+    if (_open) _wait(message.id);
   }
 
   Future<void> remove(String id) async {
@@ -51,8 +56,7 @@ class Schedules {
     if (_pending.remove(id) != null) await _save();
   }
 
-  /// The app is on screen: the phone's alarms are taken away, and timers here wait instead. One whose time went by
-  /// while it was hidden has been shown by the phone.
+  /// The app is in front: timers here wait too. One whose time went by while it was away has been shown by the phone.
   Future<void> shown() async {
     _open = true;
     final now = _now();
@@ -61,13 +65,13 @@ class Schedules {
         _pending.remove(id);
         continue;
       }
-      await _run(() => _display.cancel(id), 'schedule to app');
       _wait(id);
     }
     await _save();
   }
 
-  /// The app is hidden: what is still to come goes back to the phone.
+  /// The app left the front: the timers stop, and every alarm is set again (one may have been taken away just before
+  /// its time).
   Future<void> hidden() async {
     _open = false;
     for (final t in _timers.values) {
@@ -92,15 +96,21 @@ class Schedules {
     await _save();
   }
 
+  /// [_handOver] before the time the phone's alarm goes, so it doesn't pop up over the app; at the time it shows here.
   void _wait(String id) {
     final p = _pending[id];
     if (p == null) return;
+    _timers.remove(id)?.cancel();
     final left = p.at.difference(_now());
-    _timers[id] = Timer(left.isNegative ? Duration.zero : left, () {
-      _timers.remove(id);
-      if (_pending.remove(id) == null) return;
-      unawaited(_save());
-      _due(p.message);
+    final handOver = left - _handOver;
+    _timers[id] = Timer(handOver.isNegative ? Duration.zero : handOver, () {
+      unawaited(_run(() => _display.cancel(id), 'schedule to app'));
+      _timers[id] = Timer(left.isNegative ? Duration.zero : (handOver.isNegative ? left : _handOver), () {
+        _timers.remove(id);
+        if (_pending.remove(id) == null) return;
+        unawaited(_save());
+        _due(p.message);
+      });
     });
   }
 

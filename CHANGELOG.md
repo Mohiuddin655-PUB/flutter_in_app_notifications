@@ -1,3 +1,8 @@
+## 0.8.5
+
+- **A schedule survives the app dying in front** (a crash, a kill): the phone's alarm stays set while the app is in
+  front too, and is taken away just before the time (2s), when the app shows it itself.
+
 ## 0.8.4
 
 - **A schedule survives the app being swiped away**: it goes back to the phone's alarm as soon as the app leaves the
