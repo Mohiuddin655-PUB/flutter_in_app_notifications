@@ -1,3 +1,10 @@
+## 0.12.4
+
+- **The banner follows the finger exactly from the first touch**: it tracks the finger's own position, not the drag's
+  deltas, which only start once a drag is recognised (about 18 pt in) and left the banner that far behind; the drag is
+  still claimed, so a dragged banner isn't also tapped.
+- **A hold isn't a tap**: let go after holding the banner, it goes on its time instead of opening.
+
 ## 0.12.3
 
 - The banner's motion is `InAppNotificationMotion` (`arrive`, `leave`, `transition`, `slide`), and the drag's

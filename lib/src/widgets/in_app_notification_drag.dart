@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/physics.dart' show SpringDescription, SpringSimulation;
+import 'package:flutter/gestures.dart' show VelocityTracker;
 import 'package:flutter/widgets.dart';
 
 import '../in_app_notifications.dart';
@@ -45,31 +46,54 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
     super.dispose();
   }
 
-  void _down(PointerDownEvent _) {
-    if (!_leaving) InAppNotifications.hold(true, reason: this);
-  }
+  // The finger is followed from the moment it touches, by its own position, not by the drag's deltas: a drag is only
+  // recognised once it has moved a little, and following its deltas would leave the banner that far behind.
+  int? _pointer;
+  double _downY = 0;
+  double _from = 0;
+  VelocityTracker? _velocity;
 
-  void _up(PointerEvent _) {
-    // Still in its place (a tap, a hold): it goes on its time again. Dragged, the let-go decides.
-    if (!_leaving && !_offset.isAnimating && _offset.value == 0) InAppNotifications.hold(false, reason: this);
-  }
-
-  void _start(DragStartDetails _) {
+  void _down(PointerDownEvent e) {
+    if (_leaving || _pointer != null) return;
+    InAppNotifications.hold(true, reason: this);
+    if (!widget.enabled) return;
     _offset.stop();
+    _pointer = e.pointer;
+    _downY = e.position.dy;
+    _from = _offset.value;
     _height = math.max(context.size?.height ?? 1, 1);
+    _velocity = VelocityTracker.withKind(e.kind)..addPosition(e.timeStamp, e.position);
   }
 
-  void _update(DragUpdateDetails d) {
-    if (_leaving) return;
-    final y = _offset.value;
-    final dy = d.delta.dy;
-    // Up: exactly with the finger. Down past its place: ever less, as if held by a spring.
-    _offset.value = (y + dy <= 0 || dy < 0) && y <= 0 ? y + dy : y + dy / (1 + math.max(y, 0) / 24);
+  void _move(PointerMoveEvent e) {
+    if (e.pointer != _pointer || _leaving) return;
+    _velocity?.addPosition(e.timeStamp, e.position);
+    final y = _from + e.position.dy - _downY;
+    // Up: exactly with the finger. Down past its place: ever less, as if held by a spring (never past 60).
+    _offset.value = y <= 0 ? y : 60 * y / (y + 60);
   }
 
-  void _end(DragEndDetails d) {
+  void _up(PointerEvent e) {
+    if (e.pointer != _pointer) {
+      // Not dragging (turned off): a finger let go lets it go on its time.
+      if (_pointer == null && !_leaving) InAppNotifications.hold(false, reason: this);
+      return;
+    }
+    _pointer = null;
+    final speed = e is PointerUpEvent ? _velocity?.getVelocity().pixelsPerSecond.dy ?? 0 : 0.0;
+    _velocity = null;
+    // Barely moved (a tap, a hold): back in its place, and it goes on its time again.
+    if (_offset.value.abs() < 1 && speed.abs() < 100) {
+      _offset.value = 0;
+      InAppNotifications.hold(false, reason: this);
+      return;
+    }
+    _end(speed);
+  }
+
+  /// Let go at [speed] (pixels a second, up is negative).
+  void _end(double speed) {
     if (_leaving) return;
-    final speed = d.velocity.pixelsPerSecond.dy;
     final out = _offset.value < -_height * _outShare || speed < -_flingSpeed;
     if (!out) {
       // Back from where it is, with the finger's speed.
@@ -100,12 +124,13 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
   Widget build(BuildContext context) {
     return Listener(
       onPointerDown: _down,
+      onPointerMove: _move,
       onPointerUp: _up,
       onPointerCancel: _up,
+      // Claims a vertical drag once it is one, so it isn't also a tap on the banner (which would open it).
       child: GestureDetector(
-        onVerticalDragStart: widget.enabled ? _start : null,
-        onVerticalDragUpdate: widget.enabled ? _update : null,
-        onVerticalDragEnd: widget.enabled ? _end : null,
+        onVerticalDragStart: widget.enabled ? (_) {} : null,
+        onVerticalDragEnd: widget.enabled ? (_) {} : null,
         // Driven straight from the drag: a frame moves, fades and scales it without building anything again.
         child: InAppNotificationFollow(offset: _offset, height: () => _height, child: widget.child),
       ),

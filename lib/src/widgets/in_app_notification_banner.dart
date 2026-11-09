@@ -93,7 +93,8 @@ class InAppNotificationBanner extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GestureDetector(behavior: HitTestBehavior.opaque, onTap: onOpen, child: row),
+        // A hold isn't a tap: let go after one, it goes on its time instead of opening.
+        GestureDetector(behavior: HitTestBehavior.opaque, onTap: onOpen, onLongPress: () {}, child: row),
         if (reply != null) ...[SizedBox(height: gap), InAppNotificationReplyField(action: reply, style: style, builder: replyBuilder)],
         if (buttons.isNotEmpty) ...[
           SizedBox(height: gap / 2),
