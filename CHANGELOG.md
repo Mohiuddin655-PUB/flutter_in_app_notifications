@@ -1,3 +1,9 @@
+## 0.9.2
+
+- **App setup guide, step 9**: categories and the action handler, the rich display delegate, each field's details on
+  Android and iOS, a push while the app isn't in front (Android data-only and its background handler), what the server
+  sends, and the app's own banner with actions.
+
 ## 0.9.1
 
 - **iOS: a push's image from the package**: `InAppNotificationService` (pod `InAppNotificationsService`, no Flutter)

@@ -290,3 +290,173 @@ Ignore a page your version doesn't have, and compare names exactly.
   opens its `data` like a push's. A scheduled one fires by the **phone's** clock: if the app keeps a server clock, move
   `at` by how far the server is ahead of the phone. A phone can only schedule for itself: to reach someone at 10am in
   their time zone, keep their zone with their token and send from the server.
+
+## 9. Rich notifications: actions, replies, images, groups
+
+Everything below is optional; a plain app stops at step 8.
+
+### 9.1 Categories and the action handler
+
+Each kind of notification names its actions once, in `setup`. Every answer (a tap on Accept, a typed reply) comes to
+`onAction`, in the background too, so it must be a **top-level or static function** that sets up what it needs itself
+(a background isolate has none of the app's state):
+
+```dart
+const categories = [
+  NotificationCategory(id: 'chat', actions: [
+    NotificationAction(id: 'reply', title: 'Reply', input: true, inputHint: 'Message', inputButton: 'Send'),
+  ]),
+  NotificationCategory(id: 'request', actions: [
+    NotificationAction(id: 'accept', title: 'Accept'),
+    NotificationAction(id: 'reject', title: 'Reject', destructive: true),
+  ]),
+];
+
+@pragma('vm:entry-point')
+Future<void> handleAction(NotificationAnswer a) async {
+  if (Firebase.apps.isEmpty) await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  switch (a.actionId) {
+    case 'reply': await sendMessage(a.data['chatId']!, a.input ?? '');
+    case 'accept': await acceptRequest(a.data['from']!);
+    case 'reject': await rejectRequest(a.data['from']!);
+  }
+}
+
+InAppNotifications.setup(
+  // ...the delegates of steps 2 to 5
+  categories: categories,
+  onAction: handleAction,
+);
+InAppNotifications.actions.listen((a) { /* a screen that wants to know, while the app runs */ });
+```
+
+### 9.2 The display delegate, rich
+
+`init` takes the categories (iOS must register them first; Android puts them on each notification), and an answer
+comes back as a `NotificationAnswer`. Keep the notification's own id in the payload, so an answer knows which one it
+was, and pass flutter_local_notifications a **static** background callback for an action answered while the app isn't
+running:
+
+```dart
+class LocalDisplayDelegate implements NotificationDisplayDelegate {
+  const LocalDisplayDelegate({required this.systemWhileOpen, this.background});
+
+  final bool systemWhileOpen;
+  final void Function(NotificationResponse r)? background; // flutter_local_notifications' response
+
+  static final _plugin = FlutterLocalNotificationsPlugin();
+  static final _answers = StreamController<NotificationAnswer>.broadcast();
+  static var _categories = <String, NotificationCategory>{};
+
+  @override
+  Future<void> init({List<NotificationCategory> categories = const []}) async {
+    _categories = {for (final c in categories) c.id: c};
+    await _plugin.initialize(
+      settings: InitializationSettings(
+        android: const AndroidInitializationSettings('ic_stat'),
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false,
+          notificationCategories: [
+            for (final c in categories)
+              DarwinNotificationCategory(c.id, actions: [
+                for (final a in c.actions)
+                  a.input
+                      ? DarwinNotificationAction.text(a.id, a.title, buttonTitle: a.inputButton ?? a.title, placeholder: a.inputHint)
+                      : DarwinNotificationAction.plain(a.id, a.title, options: {
+                          if (a.destructive) DarwinNotificationActionOption.destructive,
+                          if (a.opensApp) DarwinNotificationActionOption.foreground,
+                        }),
+              ]),
+          ],
+        ),
+      ),
+      onDidReceiveNotificationResponse: (r) => _answers.add(answerOf(r.id, r.actionId, r.input, r.payload)),
+      onDidReceiveBackgroundNotificationResponse: background,
+    );
+    // ...the channel and setForegroundNotificationPresentationOptions, as in step 3
+  }
+
+  @override
+  Stream<NotificationAnswer> get responses => _answers.stream;
+
+  @override
+  Future<NotificationAnswer?> initial() async {
+    final launch = await _plugin.getNotificationAppLaunchDetails();
+    final r = launch?.notificationResponse;
+    return launch?.didNotificationLaunchApp == true && r != null ? answerOf(r.id, r.actionId, r.input, r.payload) : null;
+  }
+
+  static String _payload(PushMessage m) => jsonEncode({'id': m.id, 'data': m.data});
+
+  static NotificationAnswer answerOf(int? id, String? actionId, String? input, String? payload) {
+    final map = payload == null || payload.isEmpty ? const {} : jsonDecode(payload) as Map;
+    final data = map['data'] is Map ? {for (final e in (map['data'] as Map).entries) '${e.key}': '${e.value}'} : const <String, String>{};
+    return NotificationAnswer(id: '${map['id'] ?? id}', actionId: (actionId ?? '').isEmpty ? null : actionId, input: input, data: data);
+  }
+  // show, keep, notify, cancel, clearShown as in step 3, building their details from the message (9.3)
+}
+```
+
+### 9.3 A message's details
+
+Build each notification's details from the `PushMessage`, so every field shows:
+
+| `PushMessage` | Android (`AndroidNotificationDetails`) | iOS (`DarwinNotificationDetails`) |
+| --- | --- | --- |
+| `image` (download an https one to a file first) | `styleInformation: BigPictureStyleInformation(FilePathAndroidBitmap(path))`, `largeIcon` | `attachments: [DarwinNotificationAttachment(path)]` |
+| `group` | `groupKey` | `threadIdentifier` |
+| `category` | `actions:` its `AndroidNotificationAction`s (`inputs: [AndroidNotificationActionInput(label:)]` for `input`, `showsUserInterface: opensApp`) | `categoryIdentifier` |
+| `channel` | the channel id | — |
+| `sound` | `RawResourceAndroidNotificationSound(sound)` (`res/raw`) | `sound` (a file in the app bundle) |
+| `badge` | `number` | `badgeNumber` |
+| `progress` | `showProgress`, `maxProgress`, `progress`, `indeterminate` | — (say it in the body) |
+| `ongoing` | `ongoing` | — |
+| `expanded` | `BigTextStyleInformation(body)` | — (iOS expands by itself) |
+| `urgent` | `Importance.max`, `Priority.max` | `interruptionLevel: InterruptionLevel.timeSensitive` (with the Time Sensitive capability) |
+| `quiet` (from the kit) | `silent: true` | `presentBanner: false, presentSound: false, presentList: true` |
+
+### 9.4 A push while the app isn't in front
+
+- **iOS** shows a push itself, with its actions from `aps.category` and its image through the extension
+  (ios_setup.md §4).
+- **Android** shows only plain pushes by itself: one with actions or an image must come **data-only** (its `title` and
+  `body` in the data, with `category`, `image`, `group`...), and the app shows it from a background handler, registered
+  at launch:
+
+```dart
+@pragma('vm:entry-point')
+Future<void> pushInBackground(RemoteMessage m) async {
+  final message = PushMessage.fromData(id: m.messageId ?? '', title: m.data['title'], body: m.data['body'],
+      data: {for (final e in m.data.entries) e.key: '${e.value}'});
+  if (m.notification != null || message.silent) return; // the system showed a plain one itself
+  await LocalDisplayDelegate.showNow(message, categories: categories); // initialize the plugin, then show
+}
+
+FirebaseMessaging.onBackgroundMessage(pushInBackground); // at launch, before runApp
+```
+
+- The messaging delegate reads a push with `PushMessage.fromData` (title and body from the data when the push has no
+  notification part), so a push shows the same way while the app is open.
+
+### 9.5 What the server sends
+
+```json
+{"message": {
+  "token": "…",
+  "data": {"title": "Nadia", "body": "Are you coming?", "category": "chat", "group": "chat-42",
+           "image": "https://…/photo.jpg", "page": "chats", "chatId": "42"},
+  "android": {"priority": "high"},
+  "apns": {"payload": {"aps": {"alert": {"title": "Nadia", "body": "Are you coming?"},
+                               "category": "chat", "thread-id": "chat-42", "mutable-content": 1}},
+           "fcm_options": {"image": "https://…/photo.jpg"}}
+}}
+```
+
+Android gets it data-only (the app shows it, with its actions and image); iOS shows the `aps` part itself, with the
+category's actions and, through the extension, the image.
+
+### 9.6 The app's own banner
+
+`InAppNotificationGate`'s builder gets the message: offer its actions with `InAppNotifications.category(message.category)`
+and answer one with `InAppNotifications.answer(actionId, input:)`, which goes to `onAction` like an answer on the
+notification and takes the banner and its copy in the bar away.
