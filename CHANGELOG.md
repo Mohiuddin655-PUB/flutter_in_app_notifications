@@ -1,3 +1,8 @@
+## 0.8.3
+
+- **iOS**: the plugins still hear of a notification while the app is open (Firebase Messaging's `onMessage` comes from
+  there); 0.8.0 to 0.8.2 answered without passing it on, so the app never heard of a push while open.
+
 ## 0.8.2
 
 - Fixes 0.8.1, which didn't compile (`notify(after:)`).

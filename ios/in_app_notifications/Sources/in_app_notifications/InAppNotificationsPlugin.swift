@@ -31,25 +31,31 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        let info = notification.request.content.userInfo
-        if info["gcm.message_id"] != nil {
-            let firebase = UserDefaults.standard.dictionary(forKey: Self.firebaseOptions)
-            if (firebase?["alert"] as? Bool) == true, let previous = previous,
-               previous.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:willPresent:withCompletionHandler:))) {
-                previous.userNotificationCenter?(center, willPresent: notification, withCompletionHandler: completionHandler)
-            } else if (firebase?["alert"] as? Bool) == true {
-                completionHandler([.banner, .list, .sound, .badge])
-            } else {
-                completionHandler([.list, .badge])
-            }
-            return
+        // The plugins still hear of it (Firebase Messaging tells the app of a push from here: onMessage); their answer
+        // is set aside, and this one is given.
+        if let previous = previous,
+           previous.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:willPresent:withCompletionHandler:))) {
+            previous.userNotificationCenter?(center, willPresent: notification) { _ in }
         }
+        completionHandler(Self.options(for: notification.request.content.userInfo))
+    }
+
+    private static func options(for info: [AnyHashable: Any]) -> UNNotificationPresentationOptions {
         var options: UNNotificationPresentationOptions = []
+        if info["gcm.message_id"] != nil {
+            let firebase = UserDefaults.standard.dictionary(forKey: firebaseOptions)
+            let alert = (firebase?["alert"] as? Bool) == true
+            options.insert(.list)
+            if alert { options.insert(.banner) }
+            if alert, (firebase?["sound"] as? Bool) == true { options.insert(.sound) }
+            if (firebase?["badge"] as? Bool) == true { options.insert(.badge) }
+            return options
+        }
         if (info["presentBanner"] as? Bool) ?? true { options.insert(.banner) }
         if (info["presentList"] as? Bool) ?? true { options.insert(.list) }
         if (info["presentSound"] as? Bool) ?? true { options.insert(.sound) }
         if (info["presentBadge"] as? Bool) ?? true { options.insert(.badge) }
-        completionHandler(options)
+        return options
     }
 
     public func userNotificationCenter(
