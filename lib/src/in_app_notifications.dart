@@ -1,6 +1,7 @@
 import 'dart:async' show unawaited;
 
-import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
+import 'package:flutter/foundation.dart' show TargetPlatform, ValueListenable, ValueNotifier, defaultTargetPlatform;
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter/widgets.dart' show AppLifecycleListener;
 
 import 'delegates/notification_display_delegate.dart';
@@ -19,6 +20,9 @@ class InAppNotifications {
   const InAppNotifications._();
 
   static _Kit? _kit;
+
+  /// The package's own native side (iOS).
+  static const _channel = MethodChannel('in_app_notifications');
 
   static _Kit get _k => _kit ?? (throw StateError('InAppNotifications.setup must be called first.'));
 
@@ -87,8 +91,13 @@ class InAppNotifications {
     final message = _k.inApp.value;
     _k.inApp.value = null;
     _k.open(message?.data);
-    // Seen: its copy in the notification bar goes too.
-    if (message != null) unawaited(_k.run(() => _k.display.cancel(message.id), 'cancel opened'));
+    // Seen: its copy in the notification bar goes too (on iOS a push's is the system's, taken away natively).
+    if (message != null) {
+      unawaited(_k.run(() => _k.display.cancel(message.id), 'cancel opened'));
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        unawaited(_k.run(() => _channel.invokeMethod<int>('removePush', {'id': message.id}), 'remove opened push'));
+      }
+    }
   }
 
   /// The push shown inside the app goes untapped.

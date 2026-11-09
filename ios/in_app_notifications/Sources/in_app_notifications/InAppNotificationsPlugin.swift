@@ -20,10 +20,29 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
     private static let firebaseOptions = "flutter_firebase_messaging_presentation_options"
 
     public static func register(with registrar: FlutterPluginRegistrar) {
+        let channel = FlutterMethodChannel(name: "in_app_notifications", binaryMessenger: registrar.messenger())
+        registrar.addMethodCallDelegate(shared, channel: channel)
         let center = UNUserNotificationCenter.current()
         guard center.delegate !== shared else { return }
         shared.previous = center.delegate
         center.delegate = shared
+    }
+
+    /// `removePush(id)`: a push (by its `gcm.message_id`) taken out of Notification Center, once the app has shown it
+    /// and it was tapped. iOS shows a push itself, under an id of its own, so the display can't take it away.
+    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard call.method == "removePush", let id = (call.arguments as? [String: Any])?["id"] as? String else {
+            result(FlutterMethodNotImplemented)
+            return
+        }
+        let center = UNUserNotificationCenter.current()
+        center.getDeliveredNotifications { delivered in
+            let ids = delivered
+                .filter { ($0.request.content.userInfo["gcm.message_id"] as? String) == id }
+                .map { $0.request.identifier }
+            center.removeDeliveredNotifications(withIdentifiers: ids)
+            DispatchQueue.main.async { result(ids.count) }
+        }
     }
 
     public func userNotificationCenter(

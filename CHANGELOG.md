@@ -1,3 +1,8 @@
+## 0.8.6
+
+- **iOS: tapping the in-app banner of a push takes its Notification Center copy away too.** iOS shows a push under an
+  id of its own, so the display's cancel missed it; the plugin now finds it by its `gcm.message_id`.
+
 ## 0.8.5
 
 - **A schedule survives the app dying in front** (a crash, a kill): the phone's alarm stays set while the app is in
