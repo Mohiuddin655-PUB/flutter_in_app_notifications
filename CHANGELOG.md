@@ -1,3 +1,8 @@
+## 0.9.3
+
+- **Docs say what is required and what is optional**: the README's native checklist and the app setup guide's steps
+  each marked Required, Recommended, Optional or For <feature>.
+
 ## 0.9.2
 
 - **App setup guide, step 9**: categories and the action handler, the rich display delegate, each field's details on

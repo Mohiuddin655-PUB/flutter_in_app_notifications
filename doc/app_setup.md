@@ -6,6 +6,16 @@ Messaging, `flutter_local_notifications`, Firestore and `shared_preferences`; an
 
 Then follow [android_setup.md](android_setup.md) and [ios_setup.md](ios_setup.md) for the platforms.
 
+| Step | Need |
+| --- | --- |
+| 1 Dependencies, 2 messaging delegate, 3 display delegate, 4 token store, 5 setup/start/clear | **Required** |
+| 6 The permission | **Required** (nothing shows on Android 13+ and iOS without it) |
+| 7 Opening the right page | **Required** when a tap should open a page |
+| 4b Schedule store | Optional: only so a scheduled notification whose time comes while the app is open shows inside it |
+| 8 In-app banner (`inApp`, `InAppNotificationGate`) | Optional: without it, a notification while open shows in the notification bar (`system`) |
+| 8 Notifications made on the phone (`notify`, `cancel`) | Optional |
+| 9 Rich notifications (actions, replies, images, groups, sounds, progress) | Optional, per feature |
+
 ## 1. Dependencies
 
 ```yaml

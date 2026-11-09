@@ -79,19 +79,21 @@ The package is a plugin: it brings its own native setup, so the app adds **nothi
 - iOS: the package answers how a notification shows while the app is open (a push as Firebase's options say, kept in
   the list when the app shows its own banner; one made on the phone as it asks), and passes everything else on.
 
-What only the app can do, because no package can:
+What only the app can do, because no package can. **Required** is needed for pushes to work at all; **For …** only
+when the app uses that feature:
 
-| Where | What |
-| --- | --- |
-| `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist` | the app's Firebase config |
-| `android/app/build.gradle.kts` | `isCoreLibraryDesugaringEnabled = true` and `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")` (flutter_local_notifications needs it) |
-| `AndroidManifest.xml` | FCM's `default_notification_channel_id`, `default_notification_icon`, `default_notification_color` (optional, recommended) |
-| `res/drawable*/ic_stat.png` | a white-on-transparent small icon; `res/values/colors.xml` its colour |
-| Firebase console › Cloud Messaging | the APNs authentication key (`.p8`), Key ID and Team ID |
-| Xcode › Signing & Capabilities | Push Notifications, and Background Modes › Remote notifications |
-| `ios/Runner/AppDelegate.swift` | `UNUserNotificationCenter.current().delegate = self` before `super.application(...)` (so taps reach the plugins) |
-| Pubspec | no plugin that takes the notification delegate for every notification (`awesome_notifications`) |
-| Xcode + `ios/Podfile` | for a push's image: a `NotificationService` extension of one line (`class NotificationService: InAppNotificationService {}`) and the `InAppNotificationsService` pod on it (ios_setup.md §4) |
+| Need | Where | What |
+| --- | --- | --- |
+| Required | `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist` | the app's Firebase config |
+| Required | `android/app/build.gradle.kts` | `isCoreLibraryDesugaringEnabled = true` and `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")` (flutter_local_notifications needs it) |
+| Required | Firebase console › Cloud Messaging | the APNs authentication key (`.p8`), Key ID and Team ID |
+| Required | Xcode › Signing & Capabilities | Push Notifications, and Background Modes › Remote notifications |
+| Required | `ios/Runner/AppDelegate.swift` | `UNUserNotificationCenter.current().delegate = self` before `super.application(...)` (so taps reach the plugins) |
+| Required | Pubspec | no plugin that takes the notification delegate for every notification (`awesome_notifications`) |
+| Recommended | `AndroidManifest.xml` | FCM's `default_notification_channel_id`, `default_notification_icon`, `default_notification_color` (otherwise a system-shown push uses Android's defaults) |
+| Recommended | `res/drawable*/ic_stat.png`, `res/values/colors.xml` | a white-on-transparent small icon and its colour (otherwise the app icon, shown as a grey square) |
+| For push images on iOS | Xcode + `ios/Podfile` | a `NotificationService` extension of one line (`class NotificationService: InAppNotificationService {}`) and the `InAppNotificationsService` pod on it (ios_setup.md §4) |
+| For time-sensitive on iOS | Xcode › Signing & Capabilities | Time Sensitive Notifications (`urgent: true`; without it iOS shows it as active) |
 
 Each line is explained in the platform guide.
 
