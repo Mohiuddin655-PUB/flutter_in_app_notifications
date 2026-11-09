@@ -1,4 +1,4 @@
-import 'dart:async' show StreamController, unawaited;
+import 'dart:async' show StreamController;
 
 import '../delegates/notification_action_handler.dart';
 import '../models/notification_answer.dart';
@@ -16,10 +16,11 @@ class Responses {
 
   Stream<NotificationAnswer> get actions => _actions.stream;
 
-  void handle(NotificationAnswer response) {
+  /// Done once the app's handler is.
+  Future<void> handle(NotificationAnswer response) async {
     if (response.tapped) return _open(response.data);
     _actions.add(response);
     final handle = handler;
-    if (handle != null) unawaited(_run(() => handle(response), 'action ${response.actionId}'));
+    if (handle != null) await _run(() => handle(response), 'action ${response.actionId}');
   }
 }

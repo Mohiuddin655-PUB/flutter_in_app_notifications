@@ -25,6 +25,11 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
     private var pending: [[String: Any]] = []
     private var listening = false
 
+    /// iOS's completion for each answer still being handled, by its token: called once Dart's handler is done
+    /// (`actionDone`), or after 25 s. Called at once, iOS would suspend an app it started in the background before the
+    /// handler ran.
+    private var completions: [String: () -> Void] = [:]
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "in_app_notifications", binaryMessenger: registrar.messenger())
         shared.channel = channel
@@ -43,6 +48,11 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
             listening = true
             result(pending)
             pending.removeAll()
+            return
+        }
+        if call.method == "actionDone", let token = (call.arguments as? [String: Any])?["token"] as? String {
+            completions.removeValue(forKey: token)?()
+            result(nil)
             return
         }
         guard call.method == "removePush", let id = (call.arguments as? [String: Any])?["id"] as? String else {
@@ -107,14 +117,23 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
                 guard let key = key as? String, key != "aps" else { continue }
                 data[key] = "\(value)"
             }
-            var answer: [String: Any] = ["id": info["gcm.message_id"] as? String ?? "", "actionId": action, "data": data]
+            let token = UUID().uuidString
+            var answer: [String: Any] = ["id": info["gcm.message_id"] as? String ?? "", "actionId": action, "data": data, "token": token]
             if let text = (response as? UNTextInputNotificationResponse)?.userText { answer["input"] = text }
+            // Keep the app running until Dart has handled it (or 25 s), then tell iOS.
+            var task = UIBackgroundTaskIdentifier.invalid
+            let finish: () -> Void = {
+                completionHandler()
+                if task != .invalid { UIApplication.shared.endBackgroundTask(task) }
+            }
+            task = UIApplication.shared.beginBackgroundTask { [weak self] in self?.completions.removeValue(forKey: token)?() }
+            completions[token] = finish
+            DispatchQueue.main.asyncAfter(deadline: .now() + 25) { [weak self] in self?.completions.removeValue(forKey: token)?() }
             if listening, let channel = channel {
                 channel.invokeMethod("action", arguments: answer)
             } else {
                 pending.append(answer)
             }
-            completionHandler()
             return
         }
         guard let previous = previous,

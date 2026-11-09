@@ -1,3 +1,9 @@
+## 0.9.5
+
+- **iOS: an action on a push answered while the app was closed is handled at once**: the plugin keeps the app running
+  (a background task, up to 25 s) until the Dart handler is done, instead of telling iOS it was done at once, which
+  suspended the app until the user opened it.
+
 ## 0.9.4
 
 - **Android: actions work**: the package's manifest declares flutter_local_notifications' `ActionBroadcastReceiver`;

@@ -14,14 +14,24 @@ class NativeActions {
 
   /// Each action answered on a push goes to [onAction], those from before the app listened (it was started by one)
   /// first.
-  static Future<void> listen(void Function(NotificationAnswer response) onAction) async {
+  /// iOS waits, keeping the app running, until [onAction] is done with each.
+  static Future<void> listen(Future<void> Function(NotificationAnswer response) onAction) async {
     if (!_ios) return;
     _channel.setMethodCallHandler((MethodCall call) async {
-      if (call.method == 'action') onAction(_response(call.arguments));
+      if (call.method == 'action') await _handle(call.arguments, onAction);
     });
     final pending = await _channel.invokeMethod<List<Object?>>('takeActions') ?? const [];
     for (final answer in pending) {
-      onAction(_response(answer));
+      await _handle(answer, onAction);
+    }
+  }
+
+  static Future<void> _handle(Object? raw, Future<void> Function(NotificationAnswer response) onAction) async {
+    try {
+      await onAction(_response(raw));
+    } finally {
+      final token = (raw as Map?)?['token'];
+      if (token != null) await _channel.invokeMethod<void>('actionDone', {'token': token});
     }
   }
 

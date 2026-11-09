@@ -447,6 +447,8 @@ FirebaseMessaging.onBackgroundMessage(pushInBackground); // at launch, before ru
 
 - A static handler's **class** needs `@pragma('vm:entry-point')` too, not only the method, or native code can't reach
   it (`To access ... from native code, it must be annotated`).
+- On iOS a push's category and thread come in `aps`, not in the data: the messaging delegate adds them
+  (`RemoteMessage.category`, `threadId`) so the app's banner offers the same actions.
 - The messaging delegate reads a push with `PushMessage.fromData` (title and body from the data when the push has no
   notification part), so a push shows the same way while the app is open.
 
