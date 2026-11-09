@@ -6,7 +6,7 @@ import UserNotifications
 /// delegate asks every plugin and the first answer wins, and Firebase Messaging answers for every notification with the
 /// options set for pushes. So this plugin becomes the delegate and answers itself:
 /// - a push (it carries `gcm.message_id`): as Firebase's options say; when they leave the banner off (the app shows its
-///   own, `LocalNotificationVisibility.inApp`), it still goes into the list, quietly;
+///   own, `WhileOpen.banner`), it still goes into the list, quietly;
 /// - a notification the app made itself (flutter_local_notifications): as it asks (`presentBanner`, `presentList`,
 ///   `presentSound`, `presentBadge`), so one the app also shows inside itself goes into the list quietly.
 /// Everything else (a tap, the settings link) goes on to the delegate that was there before (the app delegate).
@@ -24,6 +24,10 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
     /// Actions answered on a push before Dart was listening (the app started by one): handed over by `takeActions`.
     private var pending: [[String: Any]] = []
     private var listening = false
+
+    /// Whether a push the app shows in its own banner still goes into Notification Center, quietly (`keepInList`):
+    /// false with `WhileOpen.bannerOnly`.
+    private var keepInList = true
 
     /// iOS's completion for each answer still being handled, by its token: called once Dart's handler is done
     /// (`actionDone`), or after 25 s. Called at once, iOS would suspend an app it started in the background before the
@@ -48,6 +52,11 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
             listening = true
             result(pending)
             pending.removeAll()
+            return
+        }
+        if call.method == "keepInList" {
+            keepInList = (call.arguments as? [String: Any])?["keep"] as? Bool ?? true
+            result(nil)
             return
         }
         if call.method == "actionDone", let token = (call.arguments as? [String: Any])?["token"] as? String {
@@ -88,7 +97,7 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
         if info["gcm.message_id"] != nil {
             let firebase = UserDefaults.standard.dictionary(forKey: firebaseOptions)
             let alert = (firebase?["alert"] as? Bool) == true
-            options.insert(.list)
+            if alert || shared.keepInList { options.insert(.list) }
             if alert { options.insert(.banner) }
             if alert, (firebase?["sound"] as? Bool) == true { options.insert(.sound) }
             if (firebase?["badge"] as? Bool) == true { options.insert(.badge) }

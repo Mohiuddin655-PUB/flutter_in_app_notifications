@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import '../in_app_notifications.dart';
 import '../models/notification_action.dart';
 import '../models/push_message.dart';
+import '../enums/banner_edge.dart';
 import 'in_app_notification_banner_style.dart';
 import 'in_app_notification_drag.dart';
 import 'in_app_notification_motion.dart';
@@ -115,7 +116,7 @@ class InAppNotificationBanner extends StatelessWidget {
         Container(margin: style.margin ?? const EdgeInsets.all(12), padding: style.padding ?? const EdgeInsets.all(14), decoration: decoration, child: body);
     // Under the status bar, its icons follow the banner while it covers them, and the page's again once it has gone
     // (the region moves with it, dragged or leaving). Kept clear of it, the page's stay.
-    final covered = style.safeArea
+    final covered = style.safeArea || BannerEdge.of(context) != BannerEdge.top
         ? card
         : AnnotatedRegion<SystemUiOverlayStyle>(value: style.statusBarStyle ?? _statusBarFor(_tone(decoration) ?? theme.colorScheme.surface), child: card);
 

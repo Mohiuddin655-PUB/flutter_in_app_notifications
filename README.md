@@ -44,7 +44,7 @@ await InAppNotifications.init();      // at launch
 InAppNotifications.start(uid);        // at sign-in, or a launch still signed in
 await InAppNotifications.clear();     // before sign-out, while the account can still write
 
-// With visibility: LocalNotificationVisibility.inApp, a notification while the app is open shows inside it. The
+// With whileOpen: WhileOpen.banner, a notification while the app is open shows inside it. The
 // package's banner does the work (actions, a reply field that holds it, tap, swipe); every visible part is the app's:
 MaterialApp(
   builder: (context, child) => InAppNotificationGate(
@@ -104,6 +104,57 @@ InAppNotifications.opened.addListener(() {
 });
 ```
 
+## Just the banner (no setup)
+
+The banner works on its own, without pushes, delegates, Firebase or any native setup. Two steps:
+
+```dart
+// 1. Wrap the app once.
+MaterialApp(
+  builder: (context, child) => InAppNotificationGate(
+    edge: BannerEdge.top, // or BannerEdge.bottom
+    builder: (context, message, onOpen, onDismiss) =>
+        InAppNotificationBanner(message: message, onOpen: onOpen, onDismiss: onDismiss),
+    child: child!,
+  ),
+);
+
+// 2. Show a message from anywhere.
+InAppNotifications.show(title: 'Saved', body: 'Your profile is up to date');
+```
+
+Optional, still without setup:
+
+```dart
+// Actions on the banner: name them once, then listen.
+InAppNotifications.categories = [
+  NotificationCategory(id: 'request', actions: [
+    NotificationAction(id: 'accept', title: 'Accept'),
+    NotificationAction(id: 'reject', title: 'Reject', destructive: true),
+  ]),
+];
+InAppNotifications.show(message: PushMessage(id: 'req-1', title: 'Rafi wants to connect', category: 'request'));
+InAppNotifications.actions.listen((a) => print(a.actionId)); // accept / reject, a.input for a reply
+InAppNotifications.opened.addListener(() => print(InAppNotifications.take())); // a tapped banner's data
+```
+
+Everything the banner does (its motion, hold, drag, tap, actions and reply field) is the same with or without setup.
+What needs `setup()` is only pushes, the notification bar, scheduling and the token.
+
+## While the app is open
+
+`setup(whileOpen: ...)` says where a push or a notification made on the phone shows while the app is open. In the
+background or closed, the notification bar shows it every time, and `show()` always uses the banner.
+
+| `WhileOpen` | While the app is open | `show()` |
+| --- | --- | --- |
+| `bar` (default) | In the notification bar | Banner |
+| `banner` | Banner, and quietly in the notification bar | Banner |
+| `bannerOnly` | Only the banner | Banner |
+
+The banner shows at the top by default; `InAppNotificationGate(edge: BannerEdge.bottom)` puts it at the bottom: it
+comes up from there, and is swiped down to go.
+
 ## Setup
 
 1. [App setup](doc/app_setup.md): the dependencies, the three delegates (FCM, flutter_local_notifications, Firestore),
@@ -154,7 +205,7 @@ Each line is explained in the platform guide.
   show inside the app and go into the notification bar quietly (`NotificationDisplayDelegate.keep` / `notify(quiet:)`);
   a scheduled one whose time comes while the app is open does too (`ScheduleStoreDelegate`: timers while open, the
   phone's alarms once hidden).
-- **Inside the app instead**: with `setup(visibility: LocalNotificationVisibility.inApp)`, such a push goes to
+- **Inside the app instead**: with `setup(whileOpen: WhileOpen.banner)` (or `bannerOnly`), such a push goes to
   `InAppNotifications.inApp` (the newest replaces the one before) and not to the notification bar; the app shows it
   (a banner at its top, say) and calls `open()` when it is tapped or `dismiss()` when it goes. In the background or
   closed, the system shows it in the notification bar either way.

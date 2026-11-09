@@ -34,7 +34,7 @@ dependencies:
 
 Use **one** local notifications plugin. A plugin that makes itself iOS's notification delegate for every push (such as
 `awesome_notifications`) decides how *every* push shows while the app is open, so the system banner can't be turned
-off and a push shows twice with `LocalNotificationVisibility.inApp`.
+off and a push shows twice with `WhileOpen.banner`.
 
 ## 2. The messaging delegate (the push service)
 
@@ -87,7 +87,7 @@ class FcmMessagingDelegate implements NotificationMessagingDelegate {
 
 ```dart
 class LocalDisplayDelegate implements NotificationDisplayDelegate {
-  /// False when the app shows a push itself while open (LocalNotificationVisibility.inApp).
+  /// False when the app shows a push itself while open (WhileOpen.banner or bannerOnly).
   const LocalDisplayDelegate({required this.systemWhileOpen});
 
   final bool systemWhileOpen;
@@ -240,13 +240,13 @@ once it is hidden. Without it, the phone shows it by itself.
 
 ```dart
 // At launch, after Firebase.initializeApp. A failure inside is reported, never thrown: the app starts without pushes.
-const visibility = LocalNotificationVisibility.inApp; // or system: the notification bar while open too
+const whileOpen = WhileOpen.banner; // or bar (the default), or bannerOnly
 InAppNotifications.setup(
   messaging: const FcmMessagingDelegate(),
-  display: const LocalDisplayDelegate(systemWhileOpen: visibility == LocalNotificationVisibility.system),
+  display: const LocalDisplayDelegate(systemWhileOpen: whileOpen == WhileOpen.bar),
   tokens: FirestoreTokenStoreDelegate(prefs),
   schedules: PreferencesScheduleStoreDelegate(prefs),
-  visibility: visibility,
+  whileOpen: whileOpen,
   now: () => DateTime.now(), // or the server's clock
   onError: (error, stack, where) => FirebaseCrashlytics.instance.recordError(error, stack, reason: where),
   unreachable: (error) => error is TimeoutException || (error is FirebaseException && error.code == 'unavailable'),
@@ -293,7 +293,7 @@ Ignore a page your version doesn't have, and compare names exactly.
 
 ## 8. Inside the app, and notifications made on the phone
 
-- With `LocalNotificationVisibility.inApp`, wrap the app (in `MaterialApp.builder`) with `InAppNotificationGate` and
+- With `WhileOpen.banner` or `bannerOnly`, wrap the app (in `MaterialApp.builder`) with `InAppNotificationGate` and
   give it the banner's look (`builder`) and motion (`transitionBuilder`); see the README.
 - `InAppNotifications.notify(id:, title:, body:, data:, at:)` shows one now, or schedules it for `at` (it shows even when
   the app is closed, and after a restart on Android once the receivers are declared); `cancel(id)` takes it away; a tap

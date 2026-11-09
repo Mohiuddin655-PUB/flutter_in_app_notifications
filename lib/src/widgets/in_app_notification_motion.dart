@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../enums/banner_edge.dart';
+
 /// How the banner comes and goes, as Discord's.
 abstract final class InAppNotificationMotion {
   /// How it comes: down from above its place, growing from a little smaller and fading in, a touch past its place and
@@ -11,7 +13,13 @@ abstract final class InAppNotificationMotion {
 
   /// Its coming and going, as Discord's: for `InAppNotificationGate.transitionBuilder` (the gate's default). Built
   /// from transitions, so a frame only repaints and moves it, nothing is built again.
-  static Widget transition(Widget child, Animation<double> animation) {
+  static Widget transition(Widget child, Animation<double> animation) => transitionAt(BannerEdge.top)(child, animation);
+
+  /// [transition] for a banner at [edge]: in from that edge and back out to it.
+  static AnimatedSwitcherTransitionBuilder transitionAt(BannerEdge edge) =>
+      (child, animation) => _move(child, animation, edge);
+
+  static Widget _move(Widget child, Animation<double> animation, BannerEdge edge) {
     final move = CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped);
     final fade = CurvedAnimation(
       parent: animation,
@@ -19,10 +27,10 @@ abstract final class InAppNotificationMotion {
       reverseCurve: Curves.easeIn,
     );
     return SlideTransition(
-      position: Tween(begin: const Offset(0, -1), end: Offset.zero).animate(move),
+      position: Tween(begin: Offset(0, edge.outward), end: Offset.zero).animate(move),
       child: FadeTransition(
         opacity: fade,
-        child: ScaleTransition(scale: Tween(begin: 0.92, end: 1.0).animate(move), alignment: Alignment.topCenter, child: child),
+        child: ScaleTransition(scale: Tween(begin: 0.92, end: 1.0).animate(move), alignment: edge.anchor, child: child),
       ),
     );
   }

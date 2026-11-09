@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart' show VelocityTracker;
 import 'package:flutter/widgets.dart';
 
 import '../in_app_notifications.dart';
+import '../enums/banner_edge.dart';
 import 'in_app_notification_follow.dart';
 
 /// Lets the banner be held and swiped up, as Discord's do. A finger on it holds it (it doesn't go by itself); dragged,
@@ -68,9 +69,11 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
   void _move(PointerMoveEvent e) {
     if (e.pointer != _pointer || _leaving) return;
     _velocity?.addPosition(e.timeStamp, e.position);
-    final y = _from + e.position.dy - _downY;
-    // Up: exactly with the finger. Down past its place: ever less, as if held by a spring (never past 60).
-    _offset.value = y <= 0 ? y : 60 * y / (y + 60);
+    // Outward (toward its edge): exactly with the finger. Inward past its place: ever less, as if held by a spring
+    // (never past 60).
+    final s = BannerEdge.of(context).outward;
+    final out = (_from + e.position.dy - _downY) * s;
+    _offset.value = (out >= 0 ? out : -60 * -out / (-out + 60)) * s;
   }
 
   void _up(PointerEvent e) {
@@ -94,7 +97,9 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
   /// Let go at [speed] (pixels a second, up is negative).
   void _end(double speed) {
     if (_leaving) return;
-    final out = _offset.value < -_height * _outShare || speed < -_flingSpeed;
+    final edge = BannerEdge.of(context);
+    final s = edge.outward;
+    final out = _offset.value * s > _height * _outShare || speed * s > _flingSpeed;
     if (!out) {
       // Back from where it is, with the finger's speed.
       _offset.animateWith(SpringSimulation(_spring, _offset.value, 0, speed)).whenComplete(() {
@@ -105,9 +110,10 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
     _leaving = true;
     // Out from where it is: the rest of the way past the top, starting at the finger's speed (ease-out starts three
     // times its average speed), so nothing jumps.
-    final target = -(_height + MediaQuery.paddingOf(context).top + 24);
+    final inset = edge == BannerEdge.top ? MediaQuery.paddingOf(context).top : MediaQuery.paddingOf(context).bottom;
+    final target = s * (_height + inset + 24);
     final distance = (target - _offset.value).abs();
-    final start = math.max(-speed, 900);
+    final start = math.max(speed * s, 900);
     final ms = (3 * distance / start * 1000).clamp(120, 360).round();
     _offset
         .animateTo(
@@ -132,7 +138,7 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
         onVerticalDragStart: widget.enabled ? (_) {} : null,
         onVerticalDragEnd: widget.enabled ? (_) {} : null,
         // Driven straight from the drag: a frame moves, fades and scales it without building anything again.
-        child: InAppNotificationFollow(offset: _offset, height: () => _height, child: widget.child),
+        child: InAppNotificationFollow(offset: _offset, height: () => _height, edge: BannerEdge.of(context), child: widget.child),
       ),
     );
   }

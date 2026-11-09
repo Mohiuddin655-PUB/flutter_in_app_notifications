@@ -1,6 +1,5 @@
 import 'dart:async' show unawaited;
 
-import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter/widgets.dart' show AppLifecycleListener;
 
 import '../delegates/error_reporter.dart';
@@ -8,10 +7,11 @@ import '../delegates/notification_display_delegate.dart';
 import '../delegates/notification_messaging_delegate.dart';
 import '../delegates/schedule_store_delegate.dart';
 import '../delegates/token_store_delegate.dart';
-import '../enums/local_notification_visibility.dart';
+import '../enums/while_open.dart';
 import '../models/notification_action.dart';
 import '../models/notification_answer.dart';
 import '../models/push_message.dart';
+import 'banner_state.dart';
 import 'native_actions.dart';
 import 'responses.dart';
 import 'schedules.dart';
@@ -25,57 +25,44 @@ class Kit {
     TokenStoreDelegate store,
     ScheduleStoreDelegate? scheduleStore,
     List<NotificationCategory> categoryList,
-    this.visibility,
+    this.banner,
+    this.whileOpen,
     this.now,
     this.onError,
     this.unreachable,
   ) {
     tokens = Tokens(messaging, store, run);
-    categories = {for (final c in categoryList) c.id: c};
-    responses = Responses(open, run);
+    banner.categories
+      ..clear()
+      ..addAll({for (final c in categoryList) c.id: c});
+    responses = Responses(banner, run);
     schedules = Schedules(display, scheduleStore, now, run, (message) => unawaited(run(() => present(message, local: true), 'due')));
   }
 
   final NotificationMessagingDelegate messaging;
   final NotificationDisplayDelegate display;
-  final LocalNotificationVisibility visibility;
+  final BannerState banner;
+  final WhileOpen whileOpen;
   final DateTime Function() now;
   final ErrorReporter? onError;
   final bool Function(Object error)? unreachable;
   late final Tokens tokens;
-  late final Map<String, NotificationCategory> categories;
   late final Responses responses;
   late final Schedules schedules;
   bool _onScreen = true;
-  final opened = ValueNotifier<Map<String, String>?>(null);
-  final inApp = ValueNotifier<PushMessage?>(null);
-
-  /// The app's banner is being used (a reply typed, a finger on it): it doesn't go by itself until every reason has
-  /// let go.
-  final holding = ValueNotifier<bool>(false);
-  final _holds = <Object>{};
-
-  void hold(Object reason, bool on) {
-    on ? _holds.add(reason) : _holds.remove(reason);
-    holding.value = _holds.isNotEmpty;
-  }
-
-  void releaseAll() {
-    _holds.clear();
-    holding.value = false;
-  }
 
   bool _ready = false;
 
   Future<void> init() async {
     if (_ready) return;
     _ready = true;
-    await run(() => display.init(categories: categories.values.toList()), 'display init');
+    await run(() => display.init(categories: banner.categories.values.toList()), 'display init');
     messaging.received.listen(_received);
-    messaging.tapped.listen((message) => open(message.data));
+    messaging.tapped.listen((message) => banner.open(message.data));
     display.responses.listen(answered);
     await run(() => NativeActions.listen(responses.handle), 'push actions');
-    await run(() async => open((await messaging.initial())?.data), 'initial push');
+    await run(() => NativeActions.keepInList(whileOpen.keepsInBar), 'keep in list');
+    await run(() async => banner.open((await messaging.initial())?.data), 'initial push');
     await run(() async {
       final first = await display.initial();
       if (first != null) responses.handle(first);
@@ -115,8 +102,9 @@ class Kit {
   }
 
   Future<void> clear() async {
-    opened.value = null;
-    inApp.value = null;
+    banner.opened.value = null;
+    banner.releaseAll();
+    banner.inApp.value = null;
     await run(schedules.clear, 'clear schedules');
     await run(display.clearShown, 'clear shown');
     await tokens.clear();
@@ -126,20 +114,17 @@ class Kit {
     if (!message.silent) unawaited(run(() => present(message, local: false), 'show'));
   }
 
-  /// A notification due now while the app may be open: with [LocalNotificationVisibility.inApp] and the app on screen,
-  /// inside the app and quietly into the notification bar; otherwise as the platform shows it. [local]: made on the
-  /// phone, so the bar's copy is made here; a push's is the system's (or the display's, on Android while open).
+  /// A notification due now while the app may be open: in front, as [whileOpen] says (the app's banner, a quiet copy
+  /// in the bar, or the bar alone); otherwise as the platform shows it. [local]: made on the phone, so the bar's copy is
+  /// made here; a push's is the system's (or the display's, on Android while open).
   Future<void> present(PushMessage message, {required bool local}) async {
-    if (visibility == LocalNotificationVisibility.inApp && _onScreen) {
-      inApp.value = message;
-      await (local ? display.notify(message, quiet: true) : display.keep(message));
-    } else {
+    if (!_onScreen || !whileOpen.inApp) {
       await (local ? display.notify(message) : display.show(message));
+      return;
     }
-  }
-
-  void open(Map<String, String>? data) {
-    if (data != null && data.isNotEmpty) opened.value = data;
+    banner.releaseAll();
+    banner.inApp.value = message;
+    if (whileOpen.keepsInBar) await (local ? display.notify(message, quiet: true) : display.keep(message));
   }
 
   Future<bool> run(Future<void> Function() step, String where) async {

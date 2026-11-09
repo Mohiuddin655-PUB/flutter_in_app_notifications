@@ -1,23 +1,28 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import '../enums/banner_edge.dart';
+
 /// The banner where the drag has it: moved by [offset], and faded and shrunk as far as it is out. Painted, not built:
 /// each frame only sets the transform and the opacity.
 class InAppNotificationFollow extends StatelessWidget {
-  const InAppNotificationFollow({super.key, required this.offset, required this.height, required this.child});
+  const InAppNotificationFollow({super.key, required this.offset, required this.height, this.edge = BannerEdge.top, required this.child});
 
   final Animation<double> offset;
   final double Function() height;
+
+  /// The edge it goes out at: how far out it is counts that way.
+  final BannerEdge edge;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final out = _Out(offset, height);
+    final out = _Out(offset, height, edge.outward);
     return _Translate(
       offset: offset,
       child: FadeTransition(
         opacity: _Fade(out),
-        child: ScaleTransition(scale: _Shrink(out), alignment: Alignment.topCenter, child: child),
+        child: ScaleTransition(scale: _Shrink(out), alignment: edge.anchor, child: child),
       ),
     );
   }
@@ -25,14 +30,15 @@ class InAppNotificationFollow extends StatelessWidget {
 
 /// How far out it is, 0 in its place to 1 gone.
 class _Out extends Animation<double> with AnimationWithParentMixin<double> {
-  _Out(this.parent, this.height);
+  _Out(this.parent, this.height, this.outward);
 
   @override
   final Animation<double> parent;
   final double Function() height;
+  final double outward;
 
   @override
-  double get value => (-parent.value / (height() + 24)).clamp(0.0, 1.0);
+  double get value => (parent.value * outward / (height() + 24)).clamp(0.0, 1.0);
 }
 
 class _Fade extends Animation<double> with AnimationWithParentMixin<double> {

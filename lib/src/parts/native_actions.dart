@@ -35,6 +35,11 @@ class NativeActions {
     }
   }
 
+  /// Whether a push the app shows in its banner also goes into Notification Center, quietly (iOS).
+  static Future<void> keepInList(bool keep) async {
+    if (_ios) await _channel.invokeMethod<void>('keepInList', {'keep': keep});
+  }
+
   /// The push [id] (its `gcm.message_id`) taken out of Notification Center.
   static Future<void> removePush(String id) async {
     if (_ios) await _channel.invokeMethod<int>('removePush', {'id': id});

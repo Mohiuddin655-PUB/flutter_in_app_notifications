@@ -3,14 +3,16 @@ import 'dart:async' show Timer;
 import 'package:flutter/widgets.dart';
 
 import '../in_app_notifications.dart';
-import 'in_app_notification_banner.dart';
+import '../enums/banner_edge.dart';
+import 'in_app_notification_motion.dart';
 import '../models/push_message.dart';
 
 /// What shows for a push [message] inside the app: [onOpen] when it is tapped, [onDismiss] when it is swiped away.
 typedef InAppNotificationBuilder = Widget Function(BuildContext context, PushMessage message, VoidCallback onOpen, VoidCallback onDismiss);
 
 /// Wraps the app (in `MaterialApp.builder`, say) and shows what [builder] gives over [child], at [alignment], for each
-/// push that comes while the app is open, with `setup(visibility: LocalNotificationVisibility.inApp)`: the newest
+/// message sent with `InAppNotifications.show()`, and each notification while the app is open with
+/// `setup(whileOpen: WhileOpen.banner)` or `bannerOnly`: the newest
 /// replaces the one showing, and it goes by itself after [showFor]. A tap opens its data (`InAppNotifications.open`).
 /// It comes and goes through [transitionBuilder] ([enter] as it comes, [exit] as it goes, kept on screen until it has
 /// gone); with animations turned off on the phone, at once. It draws nothing of its own: the app gives the look.
@@ -19,16 +21,24 @@ class InAppNotificationGate extends StatefulWidget {
     super.key,
     required this.builder,
     required this.child,
-    this.transitionBuilder = InAppNotificationBanner.transition,
-    this.alignment = AlignmentDirectional.topCenter,
+    this.edge = BannerEdge.top,
+    this.transitionBuilder,
+    this.alignment,
     this.showFor = const Duration(seconds: 4),
     this.enter = const Duration(milliseconds: 460),
     this.exit = const Duration(milliseconds: 240),
   });
 
   final InAppNotificationBuilder builder;
-  final AnimatedSwitcherTransitionBuilder transitionBuilder;
-  final AlignmentGeometry alignment;
+
+  /// The edge it shows at: it comes in from there and is swiped back out that way.
+  final BannerEdge edge;
+
+  /// Its coming and going; by default as Discord's, from [edge] (`InAppNotificationMotion.transitionAt`).
+  final AnimatedSwitcherTransitionBuilder? transitionBuilder;
+
+  /// Where it sits; by default at [edge].
+  final AlignmentGeometry? alignment;
   final Duration showFor;
   final Duration enter;
   final Duration exit;
@@ -65,7 +75,7 @@ class _InAppNotificationGateState extends State<InAppNotificationGate> {
     super.dispose();
   }
 
-  Widget _layout(Widget? current, List<Widget> previous) => Stack(alignment: widget.alignment, children: [...previous, ?current]);
+  Widget _layout(Widget? current, List<Widget> previous) => Stack(alignment: widget.alignment ?? widget.edge.alignment, children: [...previous, ?current]);
 
   @override
   Widget build(BuildContext context) {
@@ -79,11 +89,17 @@ class _InAppNotificationGateState extends State<InAppNotificationGate> {
           builder: (context, message, _) => AnimatedSwitcher(
             duration: still ? Duration.zero : widget.enter,
             reverseDuration: still ? Duration.zero : widget.exit,
-            transitionBuilder: widget.transitionBuilder,
+            transitionBuilder: widget.transitionBuilder ?? InAppNotificationMotion.transitionAt(widget.edge),
             layoutBuilder: _layout,
             child: message == null
                 ? const SizedBox.shrink()
-                : KeyedSubtree(key: ValueKey(message.id), child: widget.builder(context, message, InAppNotifications.open, InAppNotifications.dismiss)),
+                : KeyedSubtree(
+                    key: ValueKey(message.id),
+                    child: BannerEdgeScope(
+                      edge: widget.edge,
+                      child: Builder(builder: (context) => widget.builder(context, message, InAppNotifications.open, InAppNotifications.dismiss)),
+                    ),
+                  ),
           ),
         ),
       ],

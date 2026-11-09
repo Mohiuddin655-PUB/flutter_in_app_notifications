@@ -1,3 +1,17 @@
+## 0.13.0
+
+- **The banner works without setup**: wrap the app in `InAppNotificationGate` and call `InAppNotifications.show()`;
+  no delegates, pushes or native setup. Its actions come in `InAppNotifications.actions` (names set with
+  `InAppNotifications.categories = [...]`) and a tap in `opened`. `setup()` is needed only for pushes, the notification
+  bar, scheduling and the token.
+- **`WhileOpen` says where a notification shows while the app is open**: `bar` (the default; the banner shows only
+  `show()`), `banner` (the banner and quietly the bar), `bannerOnly` (the banner alone; on iOS not in Notification
+  Center either). `setup(whileOpen:)`.
+- **Top or bottom**: `InAppNotificationGate(edge: BannerEdge.bottom)` shows the banner at the bottom: it comes up from
+  there and is swiped down to go; the status bar is left alone.
+- **Breaking**: `LocalNotificationVisibility` and `setup(visibility:)` are now `WhileOpen` and `setup(whileOpen:)`;
+  the gate's `transitionBuilder` and `alignment` default from its `edge`.
+
 ## 0.12.8
 
 - The README links the banner's looks as a live page (raw.githack), to open in a browser and play its arrival.
