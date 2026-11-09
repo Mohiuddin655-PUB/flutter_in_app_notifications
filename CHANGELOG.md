@@ -1,3 +1,8 @@
+## 0.12.7
+
+- **Sharper README pictures**: the banner's looks at three times the resolution, three to a row, and the real app's at
+  its own size.
+
 ## 0.12.6
 
 - **The README shows the banner**: every look of it, each with the call that makes it (`doc/images/banner_looks.png`,
