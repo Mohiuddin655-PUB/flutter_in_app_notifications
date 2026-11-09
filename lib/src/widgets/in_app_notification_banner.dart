@@ -116,9 +116,11 @@ class InAppNotificationBanner extends StatelessWidget {
           child: body,
         );
 
+    // The gate sits above the app's pages, outside any Material: the reply field and buttons need one.
+    final material = Material(type: MaterialType.transparency, child: card);
     final shown = style.dismissible
-        ? Dismissible(key: ValueKey(message.id), direction: style.dismissDirection, onDismissed: (_) => onDismiss(), child: card)
-        : card;
+        ? Dismissible(key: ValueKey(message.id), direction: style.dismissDirection, onDismissed: (_) => onDismiss(), child: material)
+        : material;
     return style.safeArea ? SafeArea(child: shown) : shown;
   }
 

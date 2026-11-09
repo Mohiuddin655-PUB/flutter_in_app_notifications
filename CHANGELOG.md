@@ -1,3 +1,9 @@
+## 0.10.1
+
+- **The banner's reply field works**: `InAppNotificationBanner` brings its own `Material` (the gate sits outside the
+  app's pages, and a text field needs one); before, a banner with a reply field showed an error.
+- **iOS**: an action on a push carries its category and thread in the data (from `aps`), as on Android.
+
 ## 0.10.0
 
 - **`InAppNotificationBanner`, a ready banner for the gate**: the message's title and body, its image, its category's

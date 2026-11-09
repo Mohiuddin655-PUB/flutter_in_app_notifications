@@ -118,6 +118,11 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
                 guard let key = key as? String, key != "aps", !key.hasPrefix("gcm."), !key.hasPrefix("google.") else { continue }
                 data[key] = "\(value)"
             }
+            // Its category and thread come in aps; the data carries them, as on Android.
+            if let aps = info["aps"] as? [String: Any] {
+                if let category = aps["category"] as? String { data["category"] = category }
+                if let thread = aps["thread-id"] as? String { data["group"] = thread }
+            }
             let token = UUID().uuidString
             var answer: [String: Any] = ["id": info["gcm.message_id"] as? String ?? "", "actionId": action, "data": data, "token": token]
             if let text = (response as? UNTextInputNotificationResponse)?.userText { answer["input"] = text }
