@@ -72,6 +72,7 @@ The Dart side needs nothing native; the plugins the app picks do. With FCM and f
 | Xcode › Signing & Capabilities | Push Notifications (`aps-environment`: development / production) |
 | `ios/Runner/Info.plist` | `UIBackgroundModes` › `remote-notification` |
 | `ios/Runner/AppDelegate.swift` | `UNUserNotificationCenter.current().delegate = self` before `super.application(...)` |
+| `ios/Runner/AppDelegate.swift` | `willPresent`: a notification made on the phone shows as a banner and in the list; a push is left to Firebase |
 | Pubspec | no plugin that takes the notification delegate for every notification (`awesome_notifications`) |
 
 Each line is explained in the platform guide.

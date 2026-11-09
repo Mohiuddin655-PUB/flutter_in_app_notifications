@@ -36,8 +36,26 @@ override func application(_ application: UIApplication,
 }
 ```
 
-- flutter_local_notifications only answers for the notifications it made, so Firebase decides how a push shows while
-  open, from `setForegroundNotificationPresentationOptions` (alert off with `inApp`, so it shows once).
+While the app is open, iOS asks how each notification shows. The Flutter app delegate asks every plugin and **the first
+answer wins**, and Firebase Messaging answers for every notification, the app's own included, with the options set for
+pushes. With `inApp` (alert off) a notification the app made itself (`InAppNotifications.notify`, now or scheduled)
+would then show nowhere: no banner, not even in the list. Answer for those in the AppDelegate and leave pushes to
+Firebase:
+
+```swift
+override func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                     willPresent notification: UNNotification,
+                                     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    if notification.request.content.userInfo["gcm.message_id"] == nil { // made on the phone
+        completionHandler([.banner, .list, .sound, .badge])
+        return
+    }
+    super.userNotificationCenter(center, willPresent: notification, withCompletionHandler: completionHandler)
+}
+```
+
+- A push then shows while open as `setForegroundNotificationPresentationOptions` says (alert off with `inApp`, so it
+  shows once, as the app's banner).
 - Don't add a plugin that takes the delegate for **every** notification (such as `awesome_notifications`): it shows the
   system banner over the app's own banner, whatever the options say.
 - Don't let flutter_local_notifications ask for the permission (`DarwinInitializationSettings(request...Permission:

@@ -1,3 +1,8 @@
+## 0.6.3
+
+- **iOS guide**: the AppDelegate answers how a notification made on the phone shows while the app is open; otherwise
+  Firebase Messaging answers for it with the push options and, with `inApp`, it shows nowhere.
+
 ## 0.6.2
 
 - **Native checklist** in the README: every Android and iOS file to change, and what goes in it.
