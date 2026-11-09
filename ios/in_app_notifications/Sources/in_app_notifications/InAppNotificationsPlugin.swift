@@ -19,8 +19,15 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
     /// Where Firebase Messaging keeps `setForegroundNotificationPresentationOptions`.
     private static let firebaseOptions = "flutter_firebase_messaging_presentation_options"
 
+    private var channel: FlutterMethodChannel?
+
+    /// Actions answered on a push before Dart was listening (the app started by one): handed over by `takeActions`.
+    private var pending: [[String: Any]] = []
+    private var listening = false
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "in_app_notifications", binaryMessenger: registrar.messenger())
+        shared.channel = channel
         registrar.addMethodCallDelegate(shared, channel: channel)
         let center = UNUserNotificationCenter.current()
         guard center.delegate !== shared else { return }
@@ -30,7 +37,14 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
 
     /// `removePush(id)`: a push (by its `gcm.message_id`) taken out of Notification Center, once the app has shown it
     /// and it was tapped. iOS shows a push itself, under an id of its own, so the display can't take it away.
+    /// `takeActions()`: the actions answered on a push so far, and from now on each one as `action` calls.
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        if call.method == "takeActions" {
+            listening = true
+            result(pending)
+            pending.removeAll()
+            return
+        }
         guard call.method == "removePush", let id = (call.arguments as? [String: Any])?["id"] as? String else {
             result(FlutterMethodNotImplemented)
             return
@@ -82,6 +96,27 @@ public class InAppNotificationsPlugin: NSObject, FlutterPlugin, UNUserNotificati
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        // An action on a push (Reply, Accept): Firebase Messaging only tells of a tap, so it is told here. A plain tap
+        // and the app's own notifications (flutter_local_notifications) go on as before.
+        let info = response.notification.request.content.userInfo
+        let action = response.actionIdentifier
+        if info["gcm.message_id"] != nil,
+           action != UNNotificationDefaultActionIdentifier, action != UNNotificationDismissActionIdentifier {
+            var data: [String: String] = [:]
+            for (key, value) in info {
+                guard let key = key as? String, key != "aps" else { continue }
+                data[key] = "\(value)"
+            }
+            var answer: [String: Any] = ["id": info["gcm.message_id"] as? String ?? "", "actionId": action, "data": data]
+            if let text = (response as? UNTextInputNotificationResponse)?.userText { answer["input"] = text }
+            if listening, let channel = channel {
+                channel.invokeMethod("action", arguments: answer)
+            } else {
+                pending.append(answer)
+            }
+            completionHandler()
+            return
+        }
         guard let previous = previous,
               previous.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:didReceive:withCompletionHandler:)))
         else {

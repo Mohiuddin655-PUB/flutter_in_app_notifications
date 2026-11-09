@@ -28,6 +28,27 @@ MaterialApp(
   ),
 );
 
+// Actions: each kind of notification names what it offers; every answer comes to onAction, in the background too.
+InAppNotifications.setup(
+  // ...
+  categories: [
+    NotificationCategory(id: 'chat', actions: [
+      NotificationAction(id: 'reply', title: 'Reply', input: true, inputHint: 'Message', inputButton: 'Send'),
+    ]),
+    NotificationCategory(id: 'request', actions: [
+      NotificationAction(id: 'accept', title: 'Accept'),
+      NotificationAction(id: 'reject', title: 'Reject', destructive: true),
+    ]),
+  ],
+  onAction: handleAction, // a top-level function: Future<void> handleAction(NotificationAnswer a) { a.actionId, a.input }
+);
+await InAppNotifications.notify(message: PushMessage(
+  id: 'chat-42', title: 'Nadia', body: 'Are you coming?', category: 'chat', group: 'chat-42',
+  image: 'https://…/photo.jpg', data: {'page': 'chats'},
+));
+// A push does the same through its data: {category, group, image, sound, badge, urgent, expanded} (NotificationKeys);
+// on iOS also send aps.category for its actions, and add a Notification Service Extension for its image.
+
 // A notification made on the phone: now, or scheduled.
 await InAppNotifications.notify(id: 'streak', title: 'Keep your streak', data: {'page': 'home'});
 await InAppNotifications.notify(id: 'reminder', title: 'See who liked you', at: DateTime(2026, 11, 10, 9), data: {'page': 'likes'});

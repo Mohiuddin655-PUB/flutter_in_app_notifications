@@ -1,30 +1,28 @@
 import 'dart:async' show unawaited;
 
-import 'package:flutter/foundation.dart' show TargetPlatform, ValueListenable, ValueNotifier, defaultTargetPlatform;
-import 'package:flutter/services.dart' show MethodChannel;
-import 'package:flutter/widgets.dart' show AppLifecycleListener;
+import 'package:flutter/foundation.dart' show ValueListenable;
 
+import 'delegates/notification_action_handler.dart';
 import 'delegates/notification_display_delegate.dart';
 import 'delegates/error_reporter.dart';
 import 'delegates/notification_messaging_delegate.dart';
 import 'delegates/schedule_store_delegate.dart';
 import 'delegates/token_store_delegate.dart';
 import 'enums/local_notification_visibility.dart';
+import 'models/notification_action.dart';
+import 'models/notification_answer.dart';
 import 'models/push_message.dart';
-import 'parts/schedules.dart';
-import 'parts/tokens.dart';
+import 'parts/kit.dart';
+import 'parts/native_actions.dart';
 
 /// Push notifications, with any push service and backend: [setup] once with the app's delegates, [init] at launch,
 /// [start] at sign-in and [clear] before sign-out. A tapped push's data waits in [opened] until the app [take]s it.
 class InAppNotifications {
   const InAppNotifications._();
 
-  static _Kit? _kit;
+  static Kit? _kit;
 
-  /// The package's own native side (iOS).
-  static const _channel = MethodChannel('in_app_notifications');
-
-  static _Kit get _k => _kit ?? (throw StateError('InAppNotifications.setup must be called first.'));
+  static Kit get _k => _kit ?? (throw StateError('InAppNotifications.setup must be called first.'));
 
   /// [visibility]: where a notification that comes while the app is open shows, push or made on the phone.
   /// [schedules]: where scheduled notifications are kept, so one whose time comes while the app is open shows inside it
@@ -35,13 +33,33 @@ class InAppNotifications {
     required NotificationDisplayDelegate display,
     required TokenStoreDelegate tokens,
     ScheduleStoreDelegate? schedules,
+    List<NotificationCategory> categories = const [],
+    NotificationActionHandler? onAction,
     LocalNotificationVisibility visibility = LocalNotificationVisibility.system,
     DateTime Function()? now,
     ErrorReporter? onError,
     bool Function(Object error)? unreachable,
   }) {
-    _kit = _Kit(messaging, display, tokens, schedules, visibility, now ?? DateTime.now, onError, unreachable);
+    _kit = Kit(messaging, display, tokens, schedules, categories, visibility, now ?? DateTime.now, onError, unreachable)
+      ..responses.handler = onAction;
   }
+
+  /// Each action answered on a notification while the app runs (a reply, Accept), after `setup(onAction:)` has it.
+  static Stream<NotificationAnswer> get actions => _k.responses.actions;
+
+  /// An action from the app's own banner (`InAppNotificationGate`): handled as if answered on the notification, and
+  /// the banner and its copy in the bar go.
+  static void answer(String actionId, {String? input}) {
+    final message = _k.inApp.value;
+    if (message == null) return;
+    _k.inApp.value = null;
+    unawaited(_k.run(() => _k.display.cancel(message.id), 'cancel answered'));
+    unawaited(_k.run(() => NativeActions.removePush(message.id), 'remove answered push'));
+    _k.responses.handle(NotificationAnswer(id: message.id, actionId: actionId, input: input, data: message.data));
+  }
+
+  /// The category named [id] (its actions), for the app's banner to offer them; null when none.
+  static NotificationCategory? category(String? id) => id == null ? null : _k.categories[id];
 
   /// At launch: shows pushes that come while the app is open, and takes the one whose tap started it.
   static Future<void> init() => _k.init();
@@ -62,18 +80,23 @@ class InAppNotifications {
   /// False when it couldn't be made.
   /// While the app is open, with [LocalNotificationVisibility.inApp], it shows inside the app and goes into the bar
   /// quietly, as a push does.
+  /// [message] says how it shows (an image, a group, a category's actions, a sound, progress); [id], [title], [body] and
+  /// [data] are the short way for a plain one.
   static Future<bool> notify({
-    required String id,
+    String? id,
     String? title,
     String? body,
     Map<String, String> data = const {},
+    PushMessage? message,
     DateTime? at,
     Duration? after,
   }) {
-    final message = PushMessage(id: id, title: title, body: body, data: data);
+    assert(message != null || id != null, 'notify needs an id or a message');
+    message ??= PushMessage(id: id!, title: title, body: body, data: data);
+    final shown = message;
     final when = at ?? (after == null ? null : _k.now().add(after));
-    if (when != null && when.isAfter(_k.now())) return _k.run(() => _k.schedules.add(message, when), 'schedule');
-    return _k.run(() async => _k.present(message, local: true), 'notify');
+    if (when != null && when.isAfter(_k.now())) return _k.run(() => _k.schedules.add(shown, when), 'schedule');
+    return _k.run(() async => _k.present(shown, local: true), 'notify');
   }
 
   /// The notification made on the phone with [id] taken away, shown or still waiting.
@@ -94,9 +117,7 @@ class InAppNotifications {
     // Seen: its copy in the notification bar goes too (on iOS a push's is the system's, taken away natively).
     if (message != null) {
       unawaited(_k.run(() => _k.display.cancel(message.id), 'cancel opened'));
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
-        unawaited(_k.run(() => _channel.invokeMethod<int>('removePush', {'id': message.id}), 'remove opened push'));
-      }
+      unawaited(_k.run(() => NativeActions.removePush(message.id), 'remove opened push'));
     }
   }
 
@@ -111,95 +132,3 @@ class InAppNotifications {
   }
 }
 
-class _Kit {
-  _Kit(
-    this.messaging,
-    this.display,
-    TokenStoreDelegate store,
-    ScheduleStoreDelegate? scheduleStore,
-    this.visibility,
-    this.now,
-    this.onError,
-    this.unreachable,
-  ) {
-    tokens = Tokens(messaging, store, run);
-    schedules = Schedules(display, scheduleStore, now, run, (message) => unawaited(run(() => present(message, local: true), 'due')));
-  }
-
-  final NotificationMessagingDelegate messaging;
-  final NotificationDisplayDelegate display;
-  final LocalNotificationVisibility visibility;
-  final DateTime Function() now;
-  final ErrorReporter? onError;
-  final bool Function(Object error)? unreachable;
-  late final Tokens tokens;
-  late final Schedules schedules;
-  bool _onScreen = true;
-  final opened = ValueNotifier<Map<String, String>?>(null);
-  final inApp = ValueNotifier<PushMessage?>(null);
-  bool _ready = false;
-
-  Future<void> init() async {
-    if (_ready) return;
-    _ready = true;
-    await run(display.init, 'display init');
-    messaging.received.listen(_received);
-    messaging.tapped.listen((message) => open(message.data));
-    display.tapped.listen(open);
-    await run(() async => open((await messaging.initial())?.data), 'initial push');
-    await run(() async => open(await display.initial()), 'initial shown push');
-    // The app in front or not, for schedules and for where a notification shows. Not in front starts at inactive (the
-    // app switcher, the notification shade), not hidden: an app swiped away from the switcher is never hidden first, so
-    // a schedule left on a timer here would be lost.
-    AppLifecycleListener(
-      onResume: () {
-        _onScreen = true;
-        unawaited(run(schedules.shown, 'shown'));
-      },
-      onInactive: () {
-        if (!_onScreen) return;
-        _onScreen = false;
-        unawaited(run(schedules.hidden, 'hidden'));
-      },
-    );
-    await run(schedules.load, 'load schedules');
-  }
-
-  Future<void> clear() async {
-    opened.value = null;
-    inApp.value = null;
-    await run(schedules.clear, 'clear schedules');
-    await run(display.clearShown, 'clear shown');
-    await tokens.clear();
-  }
-
-  void _received(PushMessage message) {
-    if (!message.silent) unawaited(run(() => present(message, local: false), 'show'));
-  }
-
-  /// A notification due now while the app may be open: with [LocalNotificationVisibility.inApp] and the app on screen,
-  /// inside the app and quietly into the notification bar; otherwise as the platform shows it. [local]: made on the
-  /// phone, so the bar's copy is made here; a push's is the system's (or the display's, on Android while open).
-  Future<void> present(PushMessage message, {required bool local}) async {
-    if (visibility == LocalNotificationVisibility.inApp && _onScreen) {
-      inApp.value = message;
-      await (local ? display.notify(message, quiet: true) : display.keep(message));
-    } else {
-      await (local ? display.notify(message) : display.show(message));
-    }
-  }
-
-  void open(Map<String, String>? data) {
-    if (data != null && data.isNotEmpty) opened.value = data;
-  }
-
-  Future<bool> run(Future<void> Function() step, String where) async {
-    try {
-      await step();
-      return true;
-    } catch (error, stack) {
-      if (!(unreachable?.call(error) ?? false)) onError?.call(error, stack, where);
-      return false;
-    }
-  }
-}

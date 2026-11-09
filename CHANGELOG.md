@@ -1,3 +1,16 @@
+## 0.9.0
+
+- **Rich notifications**: `PushMessage` carries an `image`, a `group` (a chat's thread), a `category` (its actions), a
+  `channel`, a `sound`, a `badge`, `progress`, `ongoing`, `expanded` and `urgent`; `PushMessage.fromData` reads them
+  from a push's data (`NotificationKeys`). `InAppNotifications.notify(message:)` shows such a one.
+- **Actions and replies**: `setup(categories: [NotificationCategory(...)])` names what each kind offers
+  (`NotificationAction`: a button, or a text field with `input: true`); `setup(onAction:)` gets each answer as a
+  `NotificationAnswer` (its `actionId` and typed `input`), in the background too; `InAppNotifications.actions` streams
+  them while the app runs; the app's banner offers them through `InAppNotifications.category` and `answer`.
+- **iOS: actions on a push** reach the app (Firebase Messaging only tells of a tap), even one that started it.
+- **Breaking**: `NotificationDisplayDelegate.init(categories:)`, `responses` (in place of `tapped`) and `initial()`
+  giving a `NotificationAnswer`.
+
 ## 0.8.6
 
 - **iOS: tapping the in-app banner of a push takes its Notification Center copy away too.** iOS shows a push under an
