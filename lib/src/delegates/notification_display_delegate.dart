@@ -16,4 +16,11 @@ abstract interface class NotificationDisplayDelegate {
 
   /// Every push the phone still shows for this app taken away (sign-out), so none is tapped for the next account.
   Future<void> clearShown();
+
+  /// A notification made on the phone, in the notification bar on every platform: now, or at [at] when given (a time
+  /// already gone shows it now). The same [PushMessage.id] replaces one shown or waiting.
+  Future<void> notify(PushMessage message, {DateTime? at});
+
+  /// The notification made on the phone with [id] taken away, shown or still waiting.
+  Future<void> cancel(String id);
 }

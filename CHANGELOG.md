@@ -1,3 +1,10 @@
+## 0.6.0
+
+- **Notifications made on the phone**: `InAppNotifications.notify(id:, title:, body:, data:, at:)` shows one in the
+  notification bar now, or schedules it for `at` (shown even when the app is closed); `cancel(id)` takes it away. A tap
+  puts its `data` in `opened`, as a push's.
+- **Breaking**: `NotificationDisplayDelegate.notify(message, at:)` and `cancel(id)`, the app's way to make them.
+
 ## 0.5.0
 
 - **Sign-out forgets what the account was told**: `InAppNotifications.clear()` also drops a tapped push not yet taken

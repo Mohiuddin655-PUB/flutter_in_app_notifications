@@ -45,6 +45,17 @@ class InAppNotifications {
   /// The data of the push last tapped, until [take]n.
   static ValueListenable<Map<String, String>?> get opened => _k.opened;
 
+  /// A notification made on the phone (a reminder, say), in the notification bar: now, or at [at] (scheduled; it shows
+  /// even when the app is closed). [id] names it, to replace or [cancel] it; a tap puts [data] in [opened], as a push's.
+  /// False when it couldn't be made.
+  static Future<bool> notify({required String id, String? title, String? body, Map<String, String> data = const {}, DateTime? at}) {
+    final message = PushMessage(id: id, title: title, body: body, data: data);
+    return _k.run(() => _k.display.notify(message, at: at), at == null ? 'notify' : 'schedule');
+  }
+
+  /// The notification made on the phone with [id] taken away, shown or still waiting.
+  static Future<bool> cancel(String id) => _k.run(() => _k.display.cancel(id), 'cancel');
+
   /// With [LocalNotificationVisibility.inApp]: the push to show inside the app now (the newest), until [open]ed or
   /// [dismiss]ed.
   static ValueListenable<PushMessage?> get inApp => _k.inApp;

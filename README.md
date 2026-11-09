@@ -28,6 +28,11 @@ MaterialApp(
   ),
 );
 
+// A notification made on the phone: now, or scheduled.
+await InAppNotifications.notify(id: 'streak', title: 'Keep your streak', data: {'page': 'home'});
+await InAppNotifications.notify(id: 'reminder', title: 'See who liked you', at: tomorrowAtNine, data: {'page': 'likes'});
+await InAppNotifications.cancel('reminder');
+
 InAppNotifications.opened.addListener(() {
   final data = InAppNotifications.take(); // {'page': 'chats', ...}
 });
