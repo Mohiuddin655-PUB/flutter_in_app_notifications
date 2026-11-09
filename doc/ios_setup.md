@@ -46,11 +46,23 @@ Firebase:
 override func userNotificationCenter(_ center: UNUserNotificationCenter,
                                      willPresent notification: UNNotification,
                                      withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-    if notification.request.content.userInfo["gcm.message_id"] == nil { // made on the phone
-        completionHandler([.banner, .list, .sound, .badge])
+    let info = notification.request.content.userInfo
+    if info["gcm.message_id"] != nil { // a push
+        let firebase = UserDefaults.standard.dictionary(forKey: "flutter_firebase_messaging_presentation_options")
+        if (firebase?["alert"] as? Bool) == true {
+            super.userNotificationCenter(center, willPresent: notification, withCompletionHandler: completionHandler)
+        } else {
+            completionHandler([.list, .badge]) // the app shows its own banner; keep it in the list, quietly
+        }
         return
     }
-    super.userNotificationCenter(center, willPresent: notification, withCompletionHandler: completionHandler)
+    // Made on the phone: as flutter_local_notifications asks (quiet ones go into the list only).
+    var options: UNNotificationPresentationOptions = []
+    if (info["presentBanner"] as? Bool) ?? true { options.insert(.banner) }
+    if (info["presentList"] as? Bool) ?? true { options.insert(.list) }
+    if (info["presentSound"] as? Bool) ?? true { options.insert(.sound) }
+    if (info["presentBadge"] as? Bool) ?? true { options.insert(.badge) }
+    completionHandler(options)
 }
 ```
 

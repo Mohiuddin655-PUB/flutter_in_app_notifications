@@ -109,15 +109,21 @@ class LocalDisplayDelegate implements NotificationDisplayDelegate {
     if (Platform.isAndroid) await _show(message);
   }
 
+  /// Android doesn't keep a push that came while open; iOS keeps it in its list (AppDelegate, ios_setup.md).
   @override
-  Future<void> notify(PushMessage message, {DateTime? at}) async {
-    if (at == null || !at.isAfter(DateTime.now())) return _show(message); // or your server clock, see step 8
+  Future<void> keep(PushMessage message) async {
+    if (Platform.isAndroid) await _show(message, quiet: true);
+  }
+
+  @override
+  Future<void> notify(PushMessage message, {DateTime? at, bool quiet = false}) async {
+    if (at == null || !at.isAfter(DateTime.now())) return _show(message, quiet: quiet); // or your server clock, step 8
     await _plugin.zonedSchedule(
       id: _id(message.id),
       title: message.title,
       body: message.body,
       scheduledDate: TZDateTime.from(at.toUtc(), UTC),
-      notificationDetails: _details,
+      notificationDetails: _details(false),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, // exact needs a permission
       payload: jsonEncode(message.data),
     );
@@ -140,14 +146,15 @@ class LocalDisplayDelegate implements NotificationDisplayDelegate {
   @override
   Future<void> clearShown() => _plugin.cancelAll();
 
-  Future<void> _show(PushMessage m) =>
-      _plugin.show(id: _id(m.id), title: m.title, body: m.body, notificationDetails: _details, payload: jsonEncode(m.data));
+  Future<void> _show(PushMessage m, {bool quiet = false}) =>
+      _plugin.show(id: _id(m.id), title: m.title, body: m.body, notificationDetails: _details(quiet), payload: jsonEncode(m.data));
 
   static int _id(String id) => id.hashCode & 0x7fffffff; // the same id replaces itself
 
-  static const _details = NotificationDetails(
-    android: AndroidNotificationDetails(_channel, 'Notifications', importance: Importance.high, priority: Priority.high),
-    iOS: DarwinNotificationDetails(),
+  /// [quiet]: into the bar or list only, no pop-up or sound (the app shows its own banner for it).
+  static NotificationDetails _details(bool quiet) => NotificationDetails(
+    android: AndroidNotificationDetails(_channel, 'Notifications', importance: Importance.high, priority: Priority.high, silent: quiet),
+    iOS: DarwinNotificationDetails(presentBanner: !quiet, presentList: true, presentSound: !quiet, presentBadge: true),
   );
 
   static Map<String, String> _data(String? payload) {
@@ -199,6 +206,26 @@ match /accounts/{uid}/devices/{token} {
 }
 ```
 
+## 4b. The schedule store delegate (scheduled notifications while open)
+
+```dart
+class PreferencesScheduleStoreDelegate implements ScheduleStoreDelegate {
+  const PreferencesScheduleStoreDelegate(this.prefs);
+
+  final SharedPreferences prefs;
+
+  @override
+  String? read() => prefs.getString('push_schedules');
+
+  @override
+  Future<void> write(String? text) => text == null ? prefs.remove('push_schedules') : prefs.setString('push_schedules', text);
+}
+```
+
+With it, a scheduled notification whose time comes while the app is open shows like any other (inside the app, and
+quietly in the bar): the kit waits on a timer while the app is on screen and gives the time back to the phone's alarm
+once it is hidden. Without it, the phone shows it by itself.
+
 ## 5. Setup, start, clear
 
 ```dart
@@ -208,7 +235,9 @@ InAppNotifications.setup(
   messaging: const FcmMessagingDelegate(),
   display: const LocalDisplayDelegate(systemWhileOpen: visibility == LocalNotificationVisibility.system),
   tokens: FirestoreTokenStoreDelegate(prefs),
+  schedules: PreferencesScheduleStoreDelegate(prefs),
   visibility: visibility,
+  now: () => DateTime.now(), // or the server's clock
   onError: (error, stack, where) => FirebaseCrashlytics.instance.recordError(error, stack, reason: where),
   unreachable: (error) => error is TimeoutException || (error is FirebaseException && error.code == 'unavailable'),
 );

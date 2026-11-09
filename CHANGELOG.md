@@ -1,3 +1,14 @@
+## 0.7.0
+
+- **Every notification shows the same way while the app is open**, push or made on the phone: with
+  `LocalNotificationVisibility.inApp` it shows inside the app (`inApp`) **and** goes into the notification bar quietly
+  (no pop-up, no sound), so it can be read there later; tapping the banner takes the bar's copy away.
+- **Scheduled notifications show inside the app too**: `setup(schedules: ScheduleStoreDelegate)` keeps them between
+  launches; while the app is open they wait on timers (the phone's alarms are taken away) and show like the rest, and
+  once it is hidden they go back to the phone. `setup(now:)` is the clock their times are read by.
+- **Breaking**: `NotificationDisplayDelegate.notify(message, at:, quiet:)` and `keep(message)` (a push that came while
+  open, into the bar quietly).
+
 ## 0.6.3
 
 - **iOS guide**: the AppDelegate answers how a notification made on the phone shows while the app is open; otherwise

@@ -72,7 +72,7 @@ The Dart side needs nothing native; the plugins the app picks do. With FCM and f
 | Xcode › Signing & Capabilities | Push Notifications (`aps-environment`: development / production) |
 | `ios/Runner/Info.plist` | `UIBackgroundModes` › `remote-notification` |
 | `ios/Runner/AppDelegate.swift` | `UNUserNotificationCenter.current().delegate = self` before `super.application(...)` |
-| `ios/Runner/AppDelegate.swift` | `willPresent`: a notification made on the phone shows as a banner and in the list; a push is left to Firebase |
+| `ios/Runner/AppDelegate.swift` | `willPresent`: a push as Firebase's options say (kept in the list when the app shows its own banner); one made on the phone as it asks |
 | Pubspec | no plugin that takes the notification delegate for every notification (`awesome_notifications`) |
 
 Each line is explained in the platform guide.
@@ -86,6 +86,10 @@ Each line is explained in the platform guide.
   (`NotificationDisplayDelegate.clearShown`), so none opens a page for the next account.
 - **Shown while open**: each push from `NotificationMessagingDelegate.received` with a title or a body goes to
   `NotificationDisplayDelegate.show` (which does nothing where the platform shows it itself, as iOS does).
+- **While the app is open, everything the same way**: with `inApp`, a push and a notification made on the phone both
+  show inside the app and go into the notification bar quietly (`NotificationDisplayDelegate.keep` / `notify(quiet:)`);
+  a scheduled one whose time comes while the app is open does too (`ScheduleStoreDelegate`: timers while open, the
+  phone's alarms once hidden).
 - **Inside the app instead**: with `setup(visibility: LocalNotificationVisibility.inApp)`, such a push goes to
   `InAppNotifications.inApp` (the newest replaces the one before) and not to the notification bar; the app shows it
   (a banner at its top, say) and calls `open()` when it is tapped or `dismiss()` when it goes. In the background or

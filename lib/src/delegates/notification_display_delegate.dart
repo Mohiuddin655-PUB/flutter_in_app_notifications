@@ -18,8 +18,13 @@ abstract interface class NotificationDisplayDelegate {
   Future<void> clearShown();
 
   /// A notification made on the phone, in the notification bar on every platform: now, or at [at] when given (a time
-  /// already gone shows it now). The same [PushMessage.id] replaces one shown or waiting.
-  Future<void> notify(PushMessage message, {DateTime? at});
+  /// already gone shows it now). The same [PushMessage.id] replaces one shown or waiting. [quiet]: into the bar
+  /// without popping up or sounding, as the app shows its own banner for it.
+  Future<void> notify(PushMessage message, {DateTime? at, bool quiet = false});
+
+  /// A push that came while the app is open, which the app shows itself (`LocalNotificationVisibility.inApp`): kept in
+  /// the notification bar without popping up (Android), or nothing where the platform keeps it itself (iOS, its list).
+  Future<void> keep(PushMessage message);
 
   /// The notification made on the phone with [id] taken away, shown or still waiting.
   Future<void> cancel(String id);
