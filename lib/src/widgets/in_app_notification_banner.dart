@@ -6,6 +6,7 @@ import '../models/notification_action.dart';
 import '../models/push_message.dart';
 import 'in_app_notification_banner_style.dart';
 import 'in_app_notification_drag.dart';
+import 'in_app_notification_motion.dart';
 import 'in_app_notification_reply_field.dart';
 
 /// Builds one action's button: [onPressed] answers with it.
@@ -13,8 +14,13 @@ typedef InAppNotificationActionBuilder = Widget Function(BuildContext context, N
 
 /// Builds the reply field: [send] answers with the typed text; [controller] and [focus] are the field's (focusing it
 /// holds the banner).
-typedef InAppNotificationReplyBuilder =
-    Widget Function(BuildContext context, NotificationAction action, TextEditingController controller, FocusNode focus, VoidCallback send);
+typedef InAppNotificationReplyBuilder = Widget Function(
+  BuildContext context,
+  NotificationAction action,
+  TextEditingController controller,
+  FocusNode focus,
+  VoidCallback send,
+);
 
 /// A ready banner for `InAppNotificationGate`'s builder: the message's title and body, its image, its category's actions
 /// as buttons and a reply field (holding the banner while typed in); a tap opens it, a swipe dismisses it. Everything
@@ -59,34 +65,11 @@ class InAppNotificationBanner extends StatelessWidget {
   /// False shows no actions or reply field.
   final bool showActions;
 
-  /// How it comes: down from above its place, growing from a little smaller and fading in, a touch past its place and
-  /// back, so it lands softly.
-  static const arrive = Cubic(0.16, 1.22, 0.3, 1);
-
-  /// How it goes: up, shrinking a little and fading out, quicker at the end.
-  static const leave = Cubic(0.55, 0, 0.75, 0.6);
-
-  /// Its coming and going, as Discord's: for `InAppNotificationGate.transitionBuilder` (the gate's default). Built
-  /// from transitions, so a frame only repaints and moves it, nothing is built again.
-  static Widget transition(Widget child, Animation<double> animation) {
-    final move = CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped);
-    final fade = CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut), reverseCurve: Curves.easeIn);
-    return SlideTransition(
-      position: Tween(begin: const Offset(0, -1), end: Offset.zero).animate(move),
-      child: FadeTransition(
-        opacity: fade,
-        child: ScaleTransition(scale: Tween(begin: 0.92, end: 1.0).animate(move), alignment: Alignment.topCenter, child: child),
-      ),
-    );
-  }
-
-  /// A plain slide down from the top, and back up.
-  static Widget slideTransition(Widget child, Animation<double> animation) {
-    return SlideTransition(
-      position: Tween(begin: const Offset(0, -1), end: Offset.zero).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-      child: child,
-    );
-  }
+  /// The motion, as Discord's: see [InAppNotificationMotion].
+  static const arrive = InAppNotificationMotion.arrive;
+  static const leave = InAppNotificationMotion.leave;
+  static Widget transition(Widget child, Animation<double> animation) => InAppNotificationMotion.transition(child, animation);
+  static Widget slideTransition(Widget child, Animation<double> animation) => InAppNotificationMotion.slide(child, animation);
 
   @override
   Widget build(BuildContext context) {
@@ -111,16 +94,10 @@ class InAppNotificationBanner extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         GestureDetector(behavior: HitTestBehavior.opaque, onTap: onOpen, child: row),
-        if (reply != null) ...[
-          SizedBox(height: gap),
-          InAppNotificationReplyField(action: reply, style: style, builder: replyBuilder),
-        ],
+        if (reply != null) ...[SizedBox(height: gap), InAppNotificationReplyField(action: reply, style: style, builder: replyBuilder)],
         if (buttons.isNotEmpty) ...[
           SizedBox(height: gap / 2),
-          Row(
-            mainAxisAlignment: style.actionsAlignment ?? MainAxisAlignment.end,
-            children: [for (final a in buttons) _button(context, a)],
-          ),
+          Row(mainAxisAlignment: style.actionsAlignment ?? MainAxisAlignment.end, children: [for (final a in buttons) _button(context, a)]),
         ],
       ],
     );
@@ -134,12 +111,7 @@ class InAppNotificationBanner extends StatelessWidget {
         );
     final card =
         container?.call(context, body) ??
-        Container(
-          margin: style.margin ?? const EdgeInsets.all(12),
-          padding: style.padding ?? const EdgeInsets.all(14),
-          decoration: decoration,
-          child: body,
-        );
+        Container(margin: style.margin ?? const EdgeInsets.all(12), padding: style.padding ?? const EdgeInsets.all(14), decoration: decoration, child: body);
     // Under the status bar, its icons follow the banner while it covers them, and the page's again once it has gone
     // (the region moves with it, dragged or leaving). Kept clear of it, the page's stay.
     final covered = style.safeArea
@@ -166,9 +138,7 @@ class InAppNotificationBanner extends StatelessWidget {
     if (src == null || src.isEmpty) return null;
     // Decoded at the size it shows, not the picture's own.
     final pixels = (size * MediaQuery.devicePixelRatioOf(context)).round();
-    final image = src.startsWith('http')
-        ? Image.network(src, width: size, height: size, fit: BoxFit.cover, cacheWidth: pixels, cacheHeight: pixels)
-        : null;
+    final image = src.startsWith('http') ? Image.network(src, width: size, height: size, fit: BoxFit.cover, cacheWidth: pixels, cacheHeight: pixels) : null;
     if (image == null) return null;
     return ClipRRect(borderRadius: style.imageRadius ?? BorderRadius.circular(8), child: image);
   }
@@ -180,12 +150,7 @@ class InAppNotificationBanner extends StatelessWidget {
       children: [
         if ((message.title ?? '').isNotEmpty) Text(message.title!, style: style.titleStyle ?? theme.textTheme.titleSmall),
         if ((message.body ?? '').isNotEmpty)
-          Text(
-            message.body!,
-            style: style.bodyStyle ?? theme.textTheme.bodyMedium,
-            maxLines: style.bodyMaxLines ?? 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(message.body!, style: style.bodyStyle ?? theme.textTheme.bodyMedium, maxLines: style.bodyMaxLines ?? 2, overflow: TextOverflow.ellipsis),
       ],
     );
   }
@@ -195,7 +160,9 @@ class InAppNotificationBanner extends StatelessWidget {
     final custom = actionBuilder;
     if (custom != null) return custom(context, action, press);
     return TextButton(
-      style: action.destructive ? style.destructiveActionStyle ?? TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error) : style.actionStyle,
+      style: action.destructive
+          ? style.destructiveActionStyle ?? TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error)
+          : style.actionStyle,
       onPressed: press,
       child: Text(action.title),
     );

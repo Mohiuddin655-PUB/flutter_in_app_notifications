@@ -40,8 +40,7 @@ class InAppNotifications {
     ErrorReporter? onError,
     bool Function(Object error)? unreachable,
   }) {
-    _kit = Kit(messaging, display, tokens, schedules, categories, visibility, now ?? DateTime.now, onError, unreachable)
-      ..responses.handler = onAction;
+    _kit = Kit(messaging, display, tokens, schedules, categories, visibility, now ?? DateTime.now, onError, unreachable)..responses.handler = onAction;
   }
 
   /// Each action answered on a notification while the app runs (a reply, Accept), after `setup(onAction:)` has it.
@@ -152,4 +151,3 @@ class InAppNotifications {
     return data;
   }
 }
-

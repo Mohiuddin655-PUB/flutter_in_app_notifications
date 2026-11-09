@@ -64,6 +64,7 @@ class Kit {
     _holds.clear();
     holding.value = false;
   }
+
   bool _ready = false;
 
   Future<void> init() async {

@@ -83,10 +83,7 @@ class _InAppNotificationGateState extends State<InAppNotificationGate> {
             layoutBuilder: _layout,
             child: message == null
                 ? const SizedBox.shrink()
-                : KeyedSubtree(
-                    key: ValueKey(message.id),
-                    child: widget.builder(context, message, InAppNotifications.open, InAppNotifications.dismiss),
-                  ),
+                : KeyedSubtree(key: ValueKey(message.id), child: widget.builder(context, message, InAppNotifications.open, InAppNotifications.dismiss)),
           ),
         ),
       ],

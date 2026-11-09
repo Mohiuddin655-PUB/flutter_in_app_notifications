@@ -1,3 +1,9 @@
+## 0.12.3
+
+- The banner's motion is `InAppNotificationMotion` (`arrive`, `leave`, `transition`, `slide`), and the drag's
+  paint-only follower `InAppNotificationFollow`, each in its own file; `InAppNotificationBanner.transition` and the
+  rest stay as they were.
+
 ## 0.12.2
 
 - **Lighter on the device**: the banner's coming, going and drag are transitions and a paint-only translate, so a
