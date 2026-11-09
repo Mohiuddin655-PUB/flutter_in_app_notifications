@@ -67,8 +67,8 @@ class InAppNotifications {
     Duration? after,
   }) {
     final message = PushMessage(id: id, title: title, body: body, data: data);
-    at ??= after == null ? null : _k.now().add(after);
-    if (at != null && at.isAfter(_k.now())) return _k.run(() => _k.schedules.add(message, at), 'schedule');
+    final when = at ?? (after == null ? null : _k.now().add(after));
+    if (when != null && when.isAfter(_k.now())) return _k.run(() => _k.schedules.add(message, when), 'schedule');
     return _k.run(() async => _k.present(message, local: true), 'notify');
   }
 

@@ -1,3 +1,7 @@
+## 0.8.2
+
+- Fixes 0.8.1, which didn't compile (`notify(after:)`).
+
 ## 0.8.1
 
 - **Plain times to schedule**: `notify(at:)` takes a plain `DateTime` (`DateTime(2026, 11, 10, 10)` for 10am), and
