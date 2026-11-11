@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import '../enums/banner_edge.dart';
+import '../enums/in_app_notification_edge.dart';
 
-/// How the banner comes and goes, as Discord's.
+/// How the in-app notification comes and goes, as Discord's.
 abstract final class InAppNotificationMotion {
   /// How it comes: down from above its place, growing from a little smaller and fading in, a touch past its place and
   /// back, so it lands softly.
@@ -11,20 +11,20 @@ abstract final class InAppNotificationMotion {
   /// How it goes: up, shrinking a little and fading out, quicker at the end.
   static const leave = Cubic(0.55, 0, 0.75, 0.6);
 
-  /// Its coming and going, as Discord's: for the app's overlay that shows the banner. Built from transitions: a frame
-  /// moves, fades and scales the banner without building it again.
-  static Widget transition(Widget child, Animation<double> animation) => transitionAt(BannerEdge.top)(child, animation);
+  /// Its coming and going, as Discord's: for the app's overlay that shows the in-app notification. Built from
+  /// transitions: a frame moves, fades and scales the in-app notification without building it again.
+  static Widget transition(Widget child, Animation<double> animation) => transitionAt(InAppNotificationEdge.top)(child, animation);
 
-  /// [transition] for a banner at [edge]: in from that edge and back out to it.
-  static AnimatedSwitcherTransitionBuilder transitionAt(BannerEdge edge) =>
+  /// [transition] for an in-app notification at [edge]: in from that edge and back out to it.
+  static AnimatedSwitcherTransitionBuilder transitionAt(InAppNotificationEdge edge) =>
       (child, animation) => _move(child, animation, edge);
 
-  /// The curves made for each banner's animation, once: a transition built again (its banner rebuilt) reuses them
-  /// rather than adding new ones to the animation each time. They go with it.
+  /// The curves made for each in-app notification's animation, once: a transition built again (its in-app notification
+  /// rebuilt) reuses them rather than adding new ones to the animation each time. They go with it.
   static final _moves = Expando<(CurvedAnimation, CurvedAnimation)>();
   static final _pops = Expando<(CurvedAnimation, CurvedAnimation)>();
 
-  static Widget _move(Widget child, Animation<double> animation, BannerEdge edge) {
+  static Widget _move(Widget child, Animation<double> animation, InAppNotificationEdge edge) {
     final (move, fade) = _moves[animation] ??= (
       CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped),
       CurvedAnimation(

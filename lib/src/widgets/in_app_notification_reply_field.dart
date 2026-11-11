@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../in_app_notifications.dart';
 import '../models/notification_action.dart';
-import 'in_app_notification_banner.dart';
-import 'in_app_notification_banner_style.dart';
+import 'in_app_notification_view.dart';
+import 'in_app_notification_style.dart';
 
-/// The banner's reply field: focusing it holds the banner (`InAppNotifications.hold`), sending answers with the text.
-/// Its look comes from the banner's style, or the app's [builder] replaces it whole.
+/// The in-app notification's reply field: focusing it holds the in-app notification (`InAppNotifications.hold`),
+/// sending answers with the text. Its look comes from the in-app notification's style, or the app's [builder] replaces
+/// it whole.
 class InAppNotificationReplyField extends StatefulWidget {
   const InAppNotificationReplyField({super.key, required this.action, required this.style, this.builder});
 
   final NotificationAction action;
-  final InAppNotificationBannerStyle style;
+  final InAppNotificationStyle style;
   final InAppNotificationReplyBuilder? builder;
 
   @override
@@ -32,7 +33,7 @@ class _InAppNotificationReplyFieldState extends State<InAppNotificationReplyFiel
 
   @override
   void dispose() {
-    // The banner went (sent, dismissed, its time up): the keyboard goes with it.
+    // The in-app notification went (sent, dismissed, its time up): the keyboard goes with it.
     if (_focus.hasFocus) _focus.unfocus();
     _focus.removeListener(_held);
     InAppNotifications.hold(false, reason: _focus);

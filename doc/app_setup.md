@@ -12,7 +12,7 @@ Then follow [android_setup.md](android_setup.md) and [ios_setup.md](ios_setup.md
 | 6 The permission | **Required** (nothing shows on Android 13+ and iOS without it) |
 | 7 Opening the right page | **Required** when a tap should open a page |
 | 4b Schedule store | Optional: only so a scheduled notification whose time comes while the app is open shows inside it |
-| 8 In-app banner (`inApp`, drawn by the app's overlay) | Optional: without it, a notification while open shows in the notification bar (`system`) |
+| 8 In-app in-app notification (`inApp`, drawn by the app's overlay) | Optional: without it, a notification while open shows in the notification bar (`system`) |
 | 8 Notifications made on the phone (`notify`, `cancel`) | Optional |
 | 9 Rich notifications (actions, replies, images, groups, sounds, progress) | Optional, per feature |
 
@@ -33,8 +33,8 @@ dependencies:
 ```
 
 Use **one** local notifications plugin. A plugin that makes itself iOS's notification delegate for every push (such as
-`awesome_notifications`) decides how *every* push shows while the app is open, so the system banner can't be turned
-off and a push shows twice with `WhileOpen.banner`.
+`awesome_notifications`) decides how *every* push shows while the app is open, so the system in-app notification can't be turned
+off and a push shows twice with `WhileOpen.inApp`.
 
 ## 2. The messaging delegate (the push service)
 
@@ -87,7 +87,7 @@ class FcmMessagingDelegate implements NotificationMessagingDelegate {
 
 ```dart
 class LocalDisplayDelegate implements NotificationDisplayDelegate {
-  /// False when the app shows a push itself while open (WhileOpen.banner or bannerOnly).
+  /// False when the app shows a push itself while open (WhileOpen.inApp or bannerOnly).
   const LocalDisplayDelegate({required this.systemWhileOpen});
 
   final bool systemWhileOpen;
@@ -161,7 +161,7 @@ class LocalDisplayDelegate implements NotificationDisplayDelegate {
 
   static int _id(String id) => id.hashCode & 0x7fffffff; // the same id replaces itself
 
-  /// [quiet]: into the bar or list only, no pop-up or sound (the app shows its own banner for it).
+  /// [quiet]: into the bar or list only, no pop-up or sound (the app shows its own in-app notification for it).
   static NotificationDetails _details(bool quiet) => NotificationDetails(
     android: AndroidNotificationDetails(_channel, 'Notifications', importance: Importance.high, priority: Priority.high, silent: quiet),
     iOS: DarwinNotificationDetails(presentBanner: !quiet, presentList: true, presentSound: !quiet, presentBadge: true),
@@ -240,7 +240,7 @@ once it is hidden. Without it, the phone shows it by itself.
 
 ```dart
 // At launch, after Firebase.initializeApp. A failure inside is reported, never thrown: the app starts without pushes.
-const whileOpen = WhileOpen.banner; // or bar (the default), or bannerOnly
+const whileOpen = WhileOpen.inApp; // or bar (the default), or bannerOnly
 InAppNotifications.setup(
   messaging: const FcmMessagingDelegate(),
   display: const LocalDisplayDelegate(systemWhileOpen: whileOpen == WhileOpen.bar),
@@ -293,8 +293,8 @@ Ignore a page your version doesn't have, and compare names exactly.
 
 ## 8. Inside the app, and notifications made on the phone
 
-- With `WhileOpen.banner` or `bannerOnly`, draw `InAppNotifications.inApp` where the app shows its overlays (an app
-  shell's extension, or the example's `BannerHost`): `InAppNotificationBanner` for its look,
+- With `WhileOpen.inApp` or `bannerOnly`, draw `InAppNotifications.inApp` where the app shows its overlays (an app
+  shell's extension, or the example's `InAppNotificationHost`): `InAppNotificationView` for its look,
   `InAppNotificationMotion` for its motion, dismissed after its time unless held; see the README.
 - `InAppNotifications.notify(id:, title:, body:, data:, at:)` shows one now, or schedules it for `at` (it shows even when
   the app is closed, and after a restart on Android once the receivers are declared); `cancel(id)` takes it away; a tap
@@ -449,7 +449,7 @@ FirebaseMessaging.onBackgroundMessage(pushInBackground); // at launch, before ru
 - A static handler's **class** needs `@pragma('vm:entry-point')` too, not only the method, or native code can't reach
   it (`To access ... from native code, it must be annotated`).
 - On iOS a push's category and thread come in `aps`, not in the data: the messaging delegate adds them
-  (`RemoteMessage.category`, `threadId`) so the app's banner offers the same actions.
+  (`RemoteMessage.category`, `threadId`) so the in-app notification offers the same actions.
 - The messaging delegate reads a push with `PushMessage.fromData` (title and body from the data when the push has no
   notification part), so a push shows the same way while the app is open.
 
@@ -470,18 +470,18 @@ FirebaseMessaging.onBackgroundMessage(pushInBackground); // at launch, before ru
 Android gets it data-only (the app shows it, with its actions and image); iOS shows the `aps` part itself, with the
 category's actions and, through the extension, the image.
 
-### 9.6 The app's own banner
+### 9.6 The app's own in-app notification
 
 The app's overlay gets the message (`InAppNotifications.inApp`): offer its actions with
 `InAppNotifications.category(message.category)` and answer one with `InAppNotifications.answer(actionId, input:)`, which goes to `onAction` like an answer on the
-notification and takes the banner and its copy in the bar away. For a reply typed in the banner, call
-`InAppNotifications.hold(true)` when its field is focused, so the banner doesn't go while typing; an answer, a tap or a
+notification and takes the in-app notification and its copy in the bar away. For a reply typed in the in-app notification, call
+`InAppNotifications.hold(true)` when its field is focused, so the in-app notification doesn't go while typing; an answer, a tap or a
 dismiss lets it go.
 
-Or use the package's `InAppNotificationBanner`, which does all of that and moves as Discord's (comes down fading in
+Or use the package's `InAppNotificationView`, which does all of that and moves as Discord's (comes down fading in
 and growing, a touch past its place; held by a finger; dragged exactly with it; let go, it carries on out from where it
 is or springs back; goes up fading and shrinking), and change how it looks from the app: its
-`style` (`InAppNotificationBannerStyle`: margins, padding, the card's decoration, text styles, image size and corners,
+`style` (`InAppNotificationStyle`: margins, padding, the card's decoration, text styles, image size and corners,
 gaps, button styles, the reply field's decoration, swipe direction, safe area), and builders that replace a part whole
 (`leading`, `content`, `trailing`, `actionBuilder`, `replyBuilder`, `container`).
 

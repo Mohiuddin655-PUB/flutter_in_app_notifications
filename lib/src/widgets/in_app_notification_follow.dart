@@ -1,18 +1,18 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-import '../enums/banner_edge.dart';
+import '../enums/in_app_notification_edge.dart';
 
-/// The banner where the drag has it: moved by [offset], and faded and shrunk as far as it is out. A frame doesn't
-/// build the banner again: the move is only painted, the fade and shrink are transitions.
+/// The in-app notification where the drag has it: moved by [offset], and faded and shrunk as far as it is out. A frame
+/// doesn't build the in-app notification again: the move is only painted, the fade and shrink are transitions.
 class InAppNotificationFollow extends StatelessWidget {
-  const InAppNotificationFollow({super.key, required this.offset, required this.height, this.edge = BannerEdge.top, required this.child});
+  const InAppNotificationFollow({super.key, required this.offset, required this.height, this.edge = InAppNotificationEdge.top, required this.child});
 
   final Animation<double> offset;
   final double Function() height;
 
   /// The edge it goes out at: how far out it is counts that way.
-  final BannerEdge edge;
+  final InAppNotificationEdge edge;
   final Widget child;
 
   @override

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
-/// How `InAppNotificationBanner` looks: every value optional; a missing one falls back to the app's theme. Give the
-/// app's own design values here, or replace a whole part with the banner's builders.
+/// How `InAppNotificationView` looks: every value optional; a missing one falls back to the app's theme. Give the
+/// app's own design values here, or replace a whole part with the in-app notification's builders.
 @immutable
-class InAppNotificationBannerStyle {
-  const InAppNotificationBannerStyle({
+class InAppNotificationStyle {
+  const InAppNotificationStyle({
     this.margin,
     this.padding,
     this.decoration,

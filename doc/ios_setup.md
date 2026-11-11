@@ -41,7 +41,7 @@ open. The Flutter app delegate asks every plugin and the first answer wins, and 
 notification with the options set for pushes, which with `inApp` would hide a notification the app made itself
 completely. The plugin answers instead:
 
-- a push (it carries `gcm.message_id`): as `setForegroundNotificationPresentationOptions` says; with the banner off
+- a push (it carries `gcm.message_id`): as `setForegroundNotificationPresentationOptions` says; with the in-app notification off
   (the app shows its own) it still goes into the list, quietly;
 - a notification made on the phone: as flutter_local_notifications asks for it (`notify(quiet:)` puts it into the list
   only).

@@ -12,23 +12,23 @@ import 'enums/while_open.dart';
 import 'models/notification_action.dart';
 import 'models/notification_answer.dart';
 import 'models/push_message.dart';
-import 'parts/banner_state.dart';
+import 'parts/in_app_notification_state.dart';
 import 'parts/kit.dart';
 import 'parts/native_actions.dart';
 
-/// Notifications in the app. The banner works on its own: the app draws [inApp] where it shows its overlays (with
-/// `InAppNotificationBanner`, through its app shell, say), dismisses it after its time and calls [show]; no setup.
-/// Pushes and the phone's notifications need [setup] once with the app's delegates, [init] at launch, [start]
+/// Notifications in the app. The in-app notification works on its own: the app draws [inApp] where it shows its
+/// overlays (with `InAppNotificationView`, through its app shell, say), dismisses it after its time and calls [show];
+/// no setup. Pushes and the phone's notifications need [setup] once with the app's delegates, [init] at launch, [start]
 /// at sign-in and [clear] before sign-out. A tapped one's data waits in [opened] until the app [take]s it.
 class InAppNotifications {
   const InAppNotifications._();
 
-  /// The banner's state, there with or without [setup].
-  static final _b = BannerState.i;
+  /// The in-app notification's state, there with or without [setup].
+  static final _b = InAppNotificationState.i;
 
   static Kit? _kit;
 
-  /// Each [show] without an id is a banner of its own.
+  /// Each [show] without an id is an in-app notification of its own.
   static var _shown = 0;
 
   static Kit get _k => _kit ?? (throw StateError('InAppNotifications.setup must be called first (only the banner works without it).'));
@@ -38,7 +38,8 @@ class InAppNotifications {
   /// [whileOpen]: where a notification that comes while the app is open shows ([WhileOpen.bar] by default).
   /// [schedules]: where scheduled notifications are kept, so one whose time comes while the app is open shows as
   /// [whileOpen] says too; without it the phone shows them by itself. [now]: the clock scheduled times are read by (the
-  /// server's, say). [unreachable]: the error only says the backend couldn't be reached (offline), so it isn't reported.
+  /// server's, say). [unreachable]: the error only says the backend couldn't be reached (offline), so it isn't
+  /// reported.
   static void setup({
     required NotificationMessagingDelegate messaging,
     required NotificationDisplayDelegate display,
@@ -64,8 +65,8 @@ class InAppNotifications {
   static void start(String uid) => _k.tokens.start(uid);
 
   /// Before sign-out or deleting the account, while it may still write: its token is taken off and let go, and what it
-  /// was told goes with it (a tapped one not yet taken, the banner, those in the notification bar).
-  /// Without [setup], only the banner's are let go.
+  /// was told goes with it (a tapped one not yet taken, the in-app notification, those in the notification bar).
+  /// Without [setup], only the in-app notification's are let go.
   static Future<void> clear() async {
     final kit = _kit;
     kit == null ? _b.clear() : await kit.clear();
@@ -74,8 +75,8 @@ class InAppNotifications {
   /// A notification made on the phone (a reminder, say), in the notification bar: now, at [at] (a plain time, such as
   /// `DateTime(2026, 11, 10, 10)` for 10am), or [after] a while (scheduled; it shows even when the app is closed).
   /// Times are read by `setup(now:)`'s clock. While the app is open it shows as [WhileOpen] says, as a push does.
-  /// [message] says how it shows (an image, a group, a category's actions, a sound, progress); [id], [title], [body] and
-  /// [data] are the short way for a plain one. False when it couldn't be made.
+  /// [message] says how it shows (an image, a group, a category's actions, a sound, progress); [id], [title], [body]
+  /// and [data] are the short way for a plain one. False when it couldn't be made.
   static Future<bool> notify({
     String? id,
     String? title,
@@ -98,9 +99,9 @@ class InAppNotifications {
     await _k.display.cancel(id);
   }, 'cancel');
 
-  // ---- The banner: works without setup ----
+  // ---- The in-app notification: works without setup ----
 
-  /// [message] in the app's banner ([inApp]), with nothing in the notification bar and no push: a message the app
+  /// [message] inside the app ([inApp]), with nothing in the notification bar and no push: a message the app
   /// tells itself (a saved change, a match found). Works without [setup]. Its actions and a tap work as any other's.
   /// [id], [title], [body] and [data] are the short way for a plain one. [look] names how the app draws it (its own
   /// look by that name), as a push's does in its data.
@@ -111,21 +112,21 @@ class InAppNotifications {
     _b.present(shown);
   }
 
-  /// What each kind of message offers (its actions), for the banner without [setup]; [setup]'s `categories` set them
-  /// too.
+  /// What each kind of message offers (its actions), for the in-app notification without [setup]; [setup]'s
+  /// `categories` set them too.
   static set categories(List<NotificationCategory> categories) {
     _b.categories
       ..clear()
       ..addAll({for (final c in categories) c.id: c});
   }
 
-  /// The category named [id] (its actions), for the banner to offer them; null when none.
+  /// The category named [id] (its actions), for the in-app notification to offer them; null when none.
   static NotificationCategory? category(String? id) => id == null ? null : _b.categories[id];
 
-  /// The message showing in the banner now (the newest), until [open]ed or [dismiss]ed.
+  /// The message showing in the in-app notification now (the newest), until [open]ed or [dismiss]ed.
   static ValueListenable<PushMessage?> get inApp => _b.inApp;
 
-  /// The banner was tapped: it goes, and its data waits in [opened].
+  /// The in-app notification was tapped: it goes, and its data waits in [opened].
   static void open() {
     final message = _b.inApp.value;
     _b.releaseAll();
@@ -134,14 +135,14 @@ class InAppNotifications {
     if (message != null) _seen(message.id);
   }
 
-  /// The banner goes untapped.
+  /// The in-app notification goes untapped.
   static void dismiss() {
     _b.releaseAll();
     _b.inApp.value = null;
   }
 
-  /// An action from the banner: handled as if answered on a notification (`setup(onAction:)`, and [actions]), and the
-  /// banner goes.
+  /// An action from the in-app notification: handled as if answered on a notification (`setup(onAction:)`, and
+  /// [actions]), and the in-app notification goes.
   static void answer(String actionId, {String? input}) {
     final message = _b.inApp.value;
     if (message == null) return;
@@ -153,10 +154,10 @@ class InAppNotifications {
     kit == null ? _b.actions.add(answer) : unawaited(kit.responses.handle(answer));
   }
 
-  /// Each action answered (a reply, Accept), on the banner or on a notification, while the app runs.
+  /// Each action answered (a reply, Accept), on the in-app notification or on a notification, while the app runs.
   static Stream<NotificationAnswer> get actions => _b.actions.stream;
 
-  /// The data of the one last tapped (the banner or a notification), until [take]n.
+  /// The data of the one last tapped (the in-app notification or a notification), until [take]n.
   static ValueListenable<Map<String, String>?> get opened => _b.opened;
 
   /// The tapped one's data, once.
@@ -166,14 +167,15 @@ class InAppNotifications {
     return data;
   }
 
-  /// [on]: the banner is in use, so it doesn't go by itself; false lets it go on its time once no other [reason] holds
-  /// it (a reply being typed and a finger on it are two reasons).
+  /// [on]: the in-app notification is in use, so it doesn't go by itself; false lets it go on its time once no other
+  /// [reason] holds it (a reply being typed and a finger on it are two reasons).
   static void hold(bool on, {Object reason = 'app'}) => _b.hold(reason, on);
 
-  /// Whether the banner is held ([hold]).
+  /// Whether the in-app notification is held ([hold]).
   static ValueListenable<bool> get holding => _b.holding;
 
-  /// Seen in the banner: its copy in the notification bar goes too (with [setup]; on iOS a push's natively).
+  /// Seen in the in-app notification: its copy in the notification bar goes too (with [setup]; on iOS a push's
+  /// natively).
   static void _seen(String id) {
     final kit = _kit;
     if (kit == null) return;

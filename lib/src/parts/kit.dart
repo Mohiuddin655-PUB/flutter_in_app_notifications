@@ -11,7 +11,7 @@ import '../enums/while_open.dart';
 import '../models/notification_action.dart';
 import '../models/notification_answer.dart';
 import '../models/push_message.dart';
-import 'banner_state.dart';
+import 'in_app_notification_state.dart';
 import 'native_actions.dart';
 import 'responses.dart';
 import 'schedules.dart';
@@ -41,7 +41,7 @@ class Kit {
 
   final NotificationMessagingDelegate messaging;
   final NotificationDisplayDelegate display;
-  final BannerState banner;
+  final InAppNotificationState banner;
   final WhileOpen whileOpen;
   final DateTime Function() now;
   final ErrorReporter? onError;
@@ -112,15 +112,16 @@ class Kit {
     if (!message.silent) unawaited(run(() => present(message, local: false), 'show'));
   }
 
-  /// A notification due now while the app may be open: in front, as [whileOpen] says (the app's banner, a quiet copy
-  /// in the bar, or the bar alone); otherwise as the platform shows it. [local]: made on the phone, so the bar's copy is
-  /// made here; a push's is the system's (or the display's, on Android while open).
+  /// A notification due now while the app may be open: in front, as [whileOpen] says (the in-app notification, a quiet
+  /// copy in the bar, or the bar alone); otherwise as the platform shows it. [local]: made on the phone, so the bar's
+  /// copy is made here; a push's is the system's (or the display's, on Android while open).
   Future<void> present(PushMessage message, {required bool local}) async {
-    if (!_onScreen || !whileOpen.inApp) {
+    if (!_onScreen || !whileOpen.showsInApp) {
       await (local ? display.notify(message) : display.show(message));
       return;
     }
-    // A hold stays with the banner that has it: one in use (a reply typed) and replaced lets go as it goes.
+    // A hold stays with the in-app notification that has it: one in use (a reply typed) and replaced lets go as it
+    // goes.
     banner.present(message);
     if (whileOpen.keepsInBar) await (local ? display.notify(message, quiet: true) : display.keep(message));
   }

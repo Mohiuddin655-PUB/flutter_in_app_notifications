@@ -9,7 +9,7 @@ environment:
   sdk: ^3.13.2
 
 screenshots:
-  - description: The in-app banner with its actions
+  - description: The in-app notification with its actions
     path: doc/images/banner.png
 
 dependencies:

@@ -24,7 +24,7 @@ abstract final class NotificationKeys {
   /// `true`: its whole body shows when expanded.
   static const expanded = 'expanded';
 
-  /// The name of the look the app draws it in while open (its own looks: a toast, a popup); the app's banner when
+  /// The name of the look the app draws it in while open (its own looks: a toast, a popup); the app's usual look when
   /// none or unknown.
   static const look = 'look';
 }

@@ -156,7 +156,7 @@ class PushMessage {
   /// Breaks through Focus (iOS time-sensitive) and pops up (Android).
   final bool urgent;
 
-  /// The name of the look the app draws it in while open (its own looks: 'toast', 'popup'); the app's banner when
+  /// The name of the look the app draws it in while open (its own looks: 'toast', 'popup'); the app's usual look when
   /// null.
   final String? look;
 

@@ -3,22 +3,22 @@ import 'dart:async' show Timer;
 import 'package:flutter/material.dart';
 import 'package:in_app_notifications/in_app_notifications.dart';
 
-/// The smallest place an app can draw [InAppNotifications.inApp] in, over its pages: the banner comes in from [edge]
-/// as Discord's, goes after [showFor] (not while held: a finger on it, a reply typed), sits above the keyboard, and
-/// has its own Overlay so its reply field can be focused. A real app shows it where it shows its other overlays (an
-/// app shell's extension, say).
-class BannerHost extends StatefulWidget {
-  const BannerHost({super.key, required this.edge, required this.child, this.showFor = const Duration(seconds: 4)});
+/// The smallest place an app can draw [InAppNotifications.inApp] in, over its pages: the in-app notification comes in
+/// from [edge] as Discord's, goes after [showFor] (not while held: a finger on it, a reply typed), sits above the
+/// keyboard, and has its own Overlay so its reply field can be focused. A real app shows it where it shows its other
+/// overlays (an app shell's extension, say).
+class InAppNotificationHost extends StatefulWidget {
+  const InAppNotificationHost({super.key, required this.edge, required this.child, this.showFor = const Duration(seconds: 4)});
 
-  final BannerEdge edge;
+  final InAppNotificationEdge edge;
   final Duration showFor;
   final Widget child;
 
   @override
-  State<BannerHost> createState() => _BannerHostState();
+  State<InAppNotificationHost> createState() => _BannerHostState();
 }
 
-class _BannerHostState extends State<BannerHost> {
+class _BannerHostState extends State<InAppNotificationHost> {
   Timer? _timer;
 
   @override
@@ -68,9 +68,9 @@ class _BannerHostState extends State<BannerHost> {
                       : Align(
                           key: ValueKey(message),
                           alignment: widget.edge.alignment,
-                          child: BannerEdgeScope(
+                          child: InAppNotificationEdgeScope(
                             edge: widget.edge,
-                            child: InAppNotificationBanner(message: message, onOpen: InAppNotifications.open, onDismiss: InAppNotifications.dismiss),
+                            child: InAppNotificationView(message: message, onOpen: InAppNotifications.open, onDismiss: InAppNotifications.dismiss),
                           ),
                         ),
                 ),

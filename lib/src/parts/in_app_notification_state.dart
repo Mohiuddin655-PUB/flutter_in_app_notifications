@@ -6,30 +6,31 @@ import '../models/notification_action.dart';
 import '../models/notification_answer.dart';
 import '../models/push_message.dart';
 
-/// The app's banner and what it is told, there whether or not `InAppNotifications.setup` ran: an app that only uses
-/// the banner (`show()`) needs nothing else. The app draws [inApp] where it shows its overlays.
-class BannerState {
-  BannerState._();
+/// The in-app notification and what it is told, there whether or not `InAppNotifications.setup` ran: an app that only
+/// uses the in-app notification (`show()`) needs nothing else. The app draws [inApp] where it shows its overlays.
+class InAppNotificationState {
+  InAppNotificationState._();
 
   /// The one there is.
-  static final i = BannerState._();
+  static final i = InAppNotificationState._();
 
-  /// The message showing in the banner, until opened or dismissed; a new one replaces it.
+  /// The message showing in the in-app notification, until opened or dismissed; a new one replaces it.
   final inApp = ValueNotifier<PushMessage?>(null);
 
-  /// [message] in the banner, replacing the one showing.
+  /// [message] in the in-app notification, replacing the one showing.
   void present(PushMessage message) => inApp.value = message;
 
-  /// The data of the one last tapped (a banner or a notification), until taken.
+  /// The data of the one last tapped (an in-app notification or a notification), until taken.
   final opened = ValueNotifier<Map<String, String>?>(null);
 
-  /// Each action answered (a reply, Accept), on the banner or a notification.
+  /// Each action answered (a reply, Accept), on the in-app notification or a notification.
   final actions = StreamController<NotificationAnswer>.broadcast();
 
   /// What each kind offers, by id: from `setup(categories:)` or `InAppNotifications.categories`.
   final categories = <String, NotificationCategory>{};
 
-  /// The banner is in use (a reply typed, a finger on it): it doesn't go by itself until every reason has let go.
+  /// The in-app notification is in use (a reply typed, a finger on it): it doesn't go by itself until every reason has
+  /// let go.
   final holding = ValueNotifier<bool>(false);
   final _holds = <Object>{};
 
@@ -43,7 +44,7 @@ class BannerState {
     holding.value = false;
   }
 
-  /// Sign-out: nothing of the last account's stays (its tapped one, its banner).
+  /// Sign-out: nothing of the last account's stays (its tapped one, its in-app notification).
   void clear() {
     opened.value = null;
     releaseAll();

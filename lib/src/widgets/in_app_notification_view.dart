@@ -6,8 +6,8 @@ import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import '../in_app_notifications.dart';
 import '../models/notification_action.dart';
 import '../models/push_message.dart';
-import '../enums/banner_edge.dart';
-import 'in_app_notification_banner_style.dart';
+import '../enums/in_app_notification_edge.dart';
+import 'in_app_notification_style.dart';
 import 'in_app_notification_drag.dart';
 import 'in_app_notification_motion.dart';
 import 'in_app_notification_reply_field.dart';
@@ -16,7 +16,7 @@ import 'in_app_notification_reply_field.dart';
 typedef InAppNotificationActionBuilder = Widget Function(BuildContext context, NotificationAction action, VoidCallback onPressed);
 
 /// Builds the reply field: [send] answers with the typed text; [controller] and [focus] are the field's (focusing it
-/// holds the banner).
+/// holds the in-app notification).
 typedef InAppNotificationReplyBuilder = Widget Function(
   BuildContext context,
   NotificationAction action,
@@ -25,18 +25,18 @@ typedef InAppNotificationReplyBuilder = Widget Function(
   VoidCallback send,
 );
 
-/// A ready banner for the app to draw [InAppNotifications.inApp] with, where it shows its overlays: the message's title
-/// and body, its image, its category's actions as buttons and a reply field (holding the banner while typed in); a tap
-/// opens it, a swipe dismisses it. Everything
-/// it shows can be changed from the app: [style] for its look, and a builder for any part to replace it whole
-/// ([leading], [content], [actionBuilder], [replyBuilder], [container]).
-class InAppNotificationBanner extends StatelessWidget {
-  const InAppNotificationBanner({
+/// A ready in-app notification for the app to draw [InAppNotifications.inApp] with, where it shows its overlays: the
+/// message's title and body, its image, its category's actions as buttons and a reply field (holding the in-app
+/// notification while typed in); a tap opens it, a swipe dismisses it. Everything it shows can be changed from the app:
+/// [style] for its look, and a builder for any part to replace it whole ([leading], [content], [actionBuilder],
+/// [replyBuilder], [container]).
+class InAppNotificationView extends StatelessWidget {
+  const InAppNotificationView({
     super.key,
     required this.message,
     required this.onOpen,
     required this.onDismiss,
-    this.style = const InAppNotificationBannerStyle(),
+    this.style = const InAppNotificationStyle(),
     this.leading,
     this.content,
     this.trailing,
@@ -49,7 +49,7 @@ class InAppNotificationBanner extends StatelessWidget {
   final PushMessage message;
   final VoidCallback onOpen;
   final VoidCallback onDismiss;
-  final InAppNotificationBannerStyle style;
+  final InAppNotificationStyle style;
 
   /// In place of the image at the start (the app's icon, an avatar).
   final Widget Function(BuildContext context, PushMessage message)? leading;
@@ -126,9 +126,9 @@ class InAppNotificationBanner extends StatelessWidget {
     final card =
         container?.call(context, body) ??
         Container(margin: style.margin ?? const EdgeInsets.all(12), padding: style.padding ?? const EdgeInsets.all(14), decoration: decoration, child: body);
-    // Under the status bar, its icons follow the banner while it covers them, and the page's again once it has gone
-    // (the region moves with it, dragged or leaving). Kept clear of it, the page's stay.
-    final covered = style.safeArea || BannerEdge.of(context) != BannerEdge.top
+    // Under the status bar, its icons follow the in-app notification while it covers them, and the page's again once it
+    // has gone (the region moves with it, dragged or leaving). Kept clear of it, the page's stay.
+    final covered = style.safeArea || InAppNotificationEdge.of(context) != InAppNotificationEdge.top
         ? card
         : AnnotatedRegion<SystemUiOverlayStyle>(value: style.statusBarStyle ?? _statusBarFor(_tone(decoration) ?? theme.colorScheme.surface), child: card);
 

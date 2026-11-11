@@ -35,7 +35,7 @@ class NativeActions {
     }
   }
 
-  /// Whether a push the app shows in its banner also goes into Notification Center, quietly (iOS).
+  /// Whether a push the app shows inside itself also goes into Notification Center, quietly (iOS).
   static Future<void> keepInList(bool keep) async {
     if (_ios) await _channel.invokeMethod<void>('keepInList', {'keep': keep});
   }

@@ -5,13 +5,13 @@ import 'package:flutter/gestures.dart' show VelocityTracker;
 import 'package:flutter/widgets.dart';
 
 import '../in_app_notifications.dart';
-import '../enums/banner_edge.dart';
+import '../enums/in_app_notification_edge.dart';
 import 'in_app_notification_follow.dart';
 
-/// Lets the banner be held and swiped up, as Discord's do. A finger on it holds it (it doesn't go by itself); dragged,
-/// it follows the finger exactly (up one to one; down only a little, ever harder). Let go far enough up, or flung up,
-/// it carries on out from where it is, at the finger's speed, fading and shrinking as it goes, then [onDismiss]; let go
-/// short of that, it springs back from where it is.
+/// Lets the in-app notification be held and swiped up, as Discord's do. A finger on it holds it (it doesn't go by
+/// itself); dragged, it follows the finger exactly (up one to one; down only a little, ever harder). Let go far enough
+/// up, or flung up, it carries on out from where it is, at the finger's speed, fading and shrinking as it goes, then
+/// [onDismiss]; let go short of that, it springs back from where it is.
 class InAppNotificationDrag extends StatefulWidget {
   const InAppNotificationDrag({super.key, required this.onDismiss, required this.child, this.enabled = true});
 
@@ -48,7 +48,8 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
   }
 
   // The finger is followed from the moment it touches, by its own position, not by the drag's deltas: a drag is only
-  // recognised once it has moved a little, and following its deltas would leave the banner that far behind.
+  // recognised once it has moved a little, and following its deltas would leave the in-app notification that far
+  // behind.
   int? _pointer;
   double _downY = 0;
   double _from = 0;
@@ -71,7 +72,7 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
     _velocity?.addPosition(e.timeStamp, e.position);
     // Outward (toward its edge): exactly with the finger. Inward past its place: ever less, as if held by a spring
     // (never past 60).
-    final s = BannerEdge.of(context).outward;
+    final s = InAppNotificationEdge.of(context).outward;
     final out = (_from + e.position.dy - _downY) * s;
     _offset.value = (out >= 0 ? out : -60 * -out / (-out + 60)) * s;
   }
@@ -97,7 +98,7 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
   /// Let go at [speed] (pixels a second, up is negative).
   void _end(double speed) {
     if (_leaving) return;
-    final edge = BannerEdge.of(context);
+    final edge = InAppNotificationEdge.of(context);
     final s = edge.outward;
     final out = _offset.value * s > _height * _outShare || speed * s > _flingSpeed;
     if (!out) {
@@ -110,7 +111,7 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
     _leaving = true;
     // Out from where it is: the rest of the way past the top, starting at the finger's speed (ease-out starts three
     // times its average speed), so nothing jumps.
-    final inset = edge == BannerEdge.top ? MediaQuery.paddingOf(context).top : MediaQuery.paddingOf(context).bottom;
+    final inset = edge == InAppNotificationEdge.top ? MediaQuery.paddingOf(context).top : MediaQuery.paddingOf(context).bottom;
     final target = s * (_height + inset + 24);
     final distance = (target - _offset.value).abs();
     final start = math.max(speed * s, 900);
@@ -133,12 +134,12 @@ class _InAppNotificationDragState extends State<InAppNotificationDrag> with Sing
       onPointerMove: _move,
       onPointerUp: _up,
       onPointerCancel: _up,
-      // Claims a vertical drag once it is one, so it isn't also a tap on the banner (which would open it).
+      // Claims a vertical drag once it is one, so it isn't also a tap on the in-app notification (which would open it).
       child: GestureDetector(
         onVerticalDragStart: widget.enabled ? (_) {} : null,
         onVerticalDragEnd: widget.enabled ? (_) {} : null,
         // Driven straight from the drag: a frame moves, fades and scales it without building anything again.
-        child: InAppNotificationFollow(offset: _offset, height: () => _height, edge: BannerEdge.of(context), child: widget.child),
+        child: InAppNotificationFollow(offset: _offset, height: () => _height, edge: InAppNotificationEdge.of(context), child: widget.child),
       ),
     );
   }
