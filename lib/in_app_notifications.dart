@@ -1,6 +1,7 @@
 /// Push notifications for any backend: [InAppNotifications] (the device token on the signed-in account, a push shown
 /// while the app is open, the page a tapped one asks for) and what the app gives it ([NotificationMessagingDelegate],
-/// [NotificationDisplayDelegate], [TokenStoreDelegate], [ErrorReporter]), and [InAppNotificationGate] to show a push inside the app. See README.md.
+/// [NotificationDisplayDelegate], [TokenStoreDelegate], [ErrorReporter]), and [InAppNotificationBanner] for the app to
+/// draw a push inside the app, where it shows its overlays. See README.md.
 library;
 
 export 'src/delegates/notification_display_delegate.dart';
@@ -20,6 +21,4 @@ export 'src/widgets/in_app_notification_banner.dart';
 export 'src/widgets/in_app_notification_banner_style.dart';
 export 'src/widgets/in_app_notification_drag.dart';
 export 'src/widgets/in_app_notification_motion.dart';
-export 'src/widgets/in_app_notification_gate.dart';
-export 'src/widgets/in_app_notification_look.dart';
 export 'src/widgets/in_app_notification_reply_field.dart';

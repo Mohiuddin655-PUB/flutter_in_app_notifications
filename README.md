@@ -5,18 +5,10 @@ Push notifications for any push service and backend: the phone's **token** kept 
 service, the display and the storage through three small delegates.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/images/banner_looks.png" width="760" alt="Every look of the in-app banner, each with the call that makes it">
+  <img src="https://raw.githubusercontent.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/images/banner.png" width="300" alt="The in-app banner with its actions, at the top of an app">
 </p>
 
-<sub>Every look of the in-app banner, each with the call that makes it.
-**[Open it live in your browser](https://raw.githack.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/banner_looks.html)**
-and play its arrival (the page itself: [doc/banner_looks.html](doc/banner_looks.html)).</sub>
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/images/banner_looks_ios.png" width="760" alt="The same looks in a real app on an iPhone">
-</p>
-
-<sub>The same looks in a real app (iPhone simulator): only the banner's style and builders change.</sub>
+<sub>The banner inside the app, with its actions (the example, Android emulator).</sub>
 
 ## What it does
 
@@ -29,6 +21,9 @@ and play its arrival (the page itself: [doc/banner_looks.html](doc/banner_looks.
 - **Images, groups, sounds, badges, progress, urgent ones**, on Android and iOS.
 - **Every visible part is yours**: a style for the look, and a builder for any part. The motion, hold, drag and
   actions stay the package's.
+- **Shown where your app shows its overlays**: the package says which message is in the banner (`inApp`) and when it
+  is held; your overlay (an app shell, say) draws it, places it and dismisses it after its time. Toasts, snackbars and
+  popups are your overlay's; a message names one with `look`.
 - **No dependencies**: the push service, the display and the storage are your delegates; the native setup comes with the
   package.
 
@@ -44,27 +39,25 @@ await InAppNotifications.init();      // at launch
 InAppNotifications.start(uid);        // at sign-in, or a launch still signed in
 await InAppNotifications.clear();     // before sign-out, while the account can still write
 
-// With whileOpen: WhileOpen.banner, a notification while the app is open shows inside it. The
-// package's banner does the work (actions, a reply field that holds it, tap, swipe); every visible part is the app's:
-MaterialApp(
-  builder: (context, child) => InAppNotificationGate(
-    builder: (context, message, onOpen, onDismiss) => InAppNotificationBanner(
-      message: message,
-      onOpen: onOpen,
-      onDismiss: onDismiss,
-      style: InAppNotificationBannerStyle(
-        decoration: BoxDecoration(color: myCard, borderRadius: BorderRadius.circular(20)),
-        titleStyle: myTitle,
-        bodyStyle: myBody,
-        actionStyle: TextButton.styleFrom(foregroundColor: myAccent),
-      ),
-      leading: (context, message) => MyAvatar(message),         // optional: replace a part whole
-      actionBuilder: (context, action, onPressed) => MyChip(action.title, onTap: onPressed),
-    ),
-    transitionBuilder: InAppNotificationBanner.slideTransition,
-    child: child!,
+// With whileOpen: WhileOpen.banner, a notification while the app is open shows inside it: the app draws
+// InAppNotifications.inApp where it shows its overlays (an app shell's extension, say; the example's BannerHost is the
+// smallest one). The package's banner does the work (actions, a reply field that holds it, tap, swipe); every visible
+// part is the app's:
+InAppNotificationBanner(
+  message: message,                       // InAppNotifications.inApp.value
+  onOpen: InAppNotifications.open,
+  onDismiss: InAppNotifications.dismiss,
+  style: InAppNotificationBannerStyle(
+    decoration: BoxDecoration(color: myCard, borderRadius: BorderRadius.circular(20)),
+    titleStyle: myTitle,
+    bodyStyle: myBody,
+    actionStyle: TextButton.styleFrom(foregroundColor: myAccent),
   ),
+  leading: (context, message) => MyAvatar(message),         // optional: replace a part whole
+  actionBuilder: (context, action, onPressed) => MyChip(action.title, onTap: onPressed),
 );
+// Its motion: InAppNotificationMotion.transitionAt(BannerEdge.top) (Discord's). Its time is the overlay's: it calls
+// dismiss() after a few seconds, but not while InAppNotifications.holding (a finger on it, a reply typed).
 // Or a banner entirely the app's own: any widget, with InAppNotifications.category(message.category) for its
 // actions, InAppNotifications.answer(actionId, input:) to answer, and InAppNotifications.hold(true) while typing.
 
@@ -109,15 +102,10 @@ InAppNotifications.opened.addListener(() {
 The banner works on its own, without pushes, delegates, Firebase or any native setup. Two steps:
 
 ```dart
-// 1. Wrap the app once.
-MaterialApp(
-  builder: (context, child) => InAppNotificationGate(
-    edge: BannerEdge.top, // or BannerEdge.bottom
-    builder: (context, message, onOpen, onDismiss) =>
-        InAppNotificationBanner(message: message, onOpen: onOpen, onDismiss: onDismiss),
-    child: child!,
-  ),
-);
+// 1. Draw InAppNotifications.inApp where the app shows its overlays: an app shell's extension, or a place of its own
+//    over the pages (the example's BannerHost: InAppNotificationBanner in an AnimatedSwitcher with
+//    InAppNotificationMotion, dismissed after its time unless held, with its own Overlay for the reply field).
+MaterialApp(builder: (context, child) => BannerHost(edge: BannerEdge.top, child: child!));
 
 // 2. Show a message from anywhere.
 InAppNotifications.show(title: 'Saved', body: 'Your profile is up to date');
@@ -141,43 +129,18 @@ InAppNotifications.opened.addListener(() => print(InAppNotifications.take())); /
 Everything the banner does (its motion, hold, drag, tap, actions and reply field) is the same with or without setup.
 What needs `setup()` is only pushes, the notification bar, scheduling and the token.
 
-## Toast, snackbar, popup: the same banner, by name
+## Other looks: the app's own, by name
 
-No new widgets: the gate keeps named looks of the same banner, and a message picks one by name.
+Toasts, snackbars and popups are the app's overlay's, not the package's: a message names the look it wants with
+`look`, and the app draws it that way (an app shell's look by that tag, say). The package only keeps the name.
 
 ```dart
-InAppNotificationGate(
-  looks: {
-    'toast': BannerLook.toast(),       // small, dark, bottom, 2s, no actions
-    'snackbar': BannerLook.snackbar(), // across the bottom, dark, with its actions, 4s
-    'popup': BannerLook.popup(),       // in the middle, grows in, stays until tapped, answered or swiped
-    'alert': BannerLook.popup(style: myAlertStyle).copyWith(stays: false, showFor: Duration(seconds: 8)),
-    'mine': BannerLook(edge: BannerEdge.top, showFor: Duration(seconds: 3), builder: myBuilder), // the app's own
-  },
-  builder: ..., // the look when none is named, as before
-  child: child!,
-);
-
 InAppNotifications.show(title: 'Copied', look: 'toast');
 InAppNotifications.show(message: PushMessage(id: 'match', title: "It's a match!", category: 'request'), look: 'popup');
 ```
 
-**Lanes: a toast beside the banner.** A look with its own `lane` (`BannerLook.toast()` has `lane: 'toast'`) shows in
-that lane, beside the notification banner: a toast never replaces a banner showing, nor a banner a toast; each goes on
-its own time, and only the banner is held (a reply typed, a finger on it). A message in the same lane replaces the one
-there.
-
-**This once:** `show()` takes `showFor`, `edge` and `padding` in place of its look's, for one message:
-
-```dart
-InAppNotifications.show(title: 'Press back again to leave', look: 'toast', showFor: const Duration(seconds: 3));
-InAppNotifications.show(title: 'Copied', look: 'toast', edge: BannerEdge.top);
-InAppNotifications.show(title: 'Blocked', look: 'toast', padding: const EdgeInsets.only(bottom: 120));
-```
-
-A push or a notification made on the phone picks one with `look` in its data (`NotificationKeys.look`), while the app
-is open. Each value a look leaves out (its edge, place, motion, time, builder) is the gate's own; an unknown name shows
-the gate's own look. The ready ones take a `style` (`InAppNotificationBannerStyle`) to look as the app's design does.
+A push or a notification made on the phone names one with `look` in its data (`NotificationKeys.look`), while the app
+is open; none (or one the app doesn't know) is the app's banner.
 
 ## While the app is open
 
@@ -190,8 +153,9 @@ background or closed, the notification bar shows it every time, and `show()` alw
 | `banner` | Banner, and quietly in the notification bar | Banner |
 | `bannerOnly` | Only the banner | Banner |
 
-The banner shows at the top by default; `InAppNotificationGate(edge: BannerEdge.bottom)` puts it at the bottom: it
-comes up from there, and is swiped down to go.
+The banner shows where the app's overlay puts it: at the top, or at the bottom with `BannerEdgeScope(edge:
+BannerEdge.bottom)` around it and `InAppNotificationMotion.transitionAt(BannerEdge.bottom)` for its motion, so it comes
+up from there and is swiped down to go.
 
 ## Setup
 

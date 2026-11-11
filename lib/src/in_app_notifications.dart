@@ -1,7 +1,6 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
-import 'package:flutter/painting.dart' show EdgeInsetsGeometry;
 
 import 'delegates/error_reporter.dart';
 import 'delegates/notification_action_handler.dart';
@@ -9,7 +8,6 @@ import 'delegates/notification_display_delegate.dart';
 import 'delegates/notification_messaging_delegate.dart';
 import 'delegates/schedule_store_delegate.dart';
 import 'delegates/token_store_delegate.dart';
-import 'enums/banner_edge.dart';
 import 'enums/while_open.dart';
 import 'models/notification_action.dart';
 import 'models/notification_answer.dart';
@@ -18,8 +16,9 @@ import 'parts/banner_state.dart';
 import 'parts/kit.dart';
 import 'parts/native_actions.dart';
 
-/// Notifications in the app. The banner works on its own: wrap the app in `InAppNotificationGate` and call [show]; no
-/// setup. Pushes and the phone's notifications need [setup] once with the app's delegates, [init] at launch, [start]
+/// Notifications in the app. The banner works on its own: the app draws [inApp] where it shows its overlays (with
+/// `InAppNotificationBanner`, through its app shell, say), dismisses it after its time and calls [show]; no setup.
+/// Pushes and the phone's notifications need [setup] once with the app's delegates, [init] at launch, [start]
 /// at sign-in and [clear] before sign-out. A tapped one's data waits in [opened] until the app [take]s it.
 class InAppNotifications {
   const InAppNotifications._();
@@ -101,27 +100,14 @@ class InAppNotifications {
 
   // ---- The banner: works without setup ----
 
-  /// [message] in the app's banner (`InAppNotificationGate`), with nothing in the notification bar and no push: a
-  /// message the app tells itself (a saved change, a match found). Works without [setup]. Its actions and a tap work as
-  /// any other's. [id], [title], [body] and [data] are the short way for a plain one. [look] names how it shows, from
-  /// `InAppNotificationGate.looks` ('toast', 'snackbar', 'popup' or the app's own); the gate's own look when null. A
-  /// look with its own lane (`BannerLook.lane`, a toast's) shows beside the banner without replacing it. This once,
-  /// [showFor], [edge] and [padding] take the place of its look's (a toast kept longer, higher or at the top).
-  static void show({
-    String? id,
-    String? title,
-    String? body,
-    Map<String, String> data = const {},
-    PushMessage? message,
-    String? look,
-    Duration? showFor,
-    BannerEdge? edge,
-    EdgeInsetsGeometry? padding,
-  }) {
+  /// [message] in the app's banner ([inApp]), with nothing in the notification bar and no push: a message the app
+  /// tells itself (a saved change, a match found). Works without [setup]. Its actions and a tap work as any other's.
+  /// [id], [title], [body] and [data] are the short way for a plain one. [look] names how the app draws it (its own
+  /// look by that name), as a push's does in its data.
+  static void show({String? id, String? title, String? body, Map<String, String> data = const {}, PushMessage? message, String? look}) {
     assert(message != null || id != null || title != null, 'show needs a message, an id or a title');
     var shown = message ?? PushMessage(id: id ?? 'banner-${_shown++}', title: title, body: body, data: data);
     if (look != null) shown = shown.copyWith(look: look);
-    if (showFor != null || edge != null || padding != null) _b.placement[shown] = (showFor: showFor, edge: edge, padding: padding);
     _b.present(shown);
   }
 

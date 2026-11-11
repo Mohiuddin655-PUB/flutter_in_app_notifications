@@ -11,8 +11,8 @@ abstract final class InAppNotificationMotion {
   /// How it goes: up, shrinking a little and fading out, quicker at the end.
   static const leave = Cubic(0.55, 0, 0.75, 0.6);
 
-  /// Its coming and going, as Discord's: for `InAppNotificationGate.transitionBuilder` (the gate's default). Built
-  /// from transitions: a frame moves, fades and scales the banner without building it again.
+  /// Its coming and going, as Discord's: for the app's overlay that shows the banner. Built from transitions: a frame
+  /// moves, fades and scales the banner without building it again.
   static Widget transition(Widget child, Animation<double> animation) => transitionAt(BannerEdge.top)(child, animation);
 
   /// [transition] for a banner at [edge]: in from that edge and back out to it.

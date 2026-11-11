@@ -1,5 +1,5 @@
 group = "com.mohiuddin655.in_app_notifications"
-version = "0.16.0"
+version = "0.17.0"
 
 buildscript {
     val kotlinVersion = "2.4.0"

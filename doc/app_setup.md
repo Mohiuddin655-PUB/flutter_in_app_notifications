@@ -12,7 +12,7 @@ Then follow [android_setup.md](android_setup.md) and [ios_setup.md](ios_setup.md
 | 6 The permission | **Required** (nothing shows on Android 13+ and iOS without it) |
 | 7 Opening the right page | **Required** when a tap should open a page |
 | 4b Schedule store | Optional: only so a scheduled notification whose time comes while the app is open shows inside it |
-| 8 In-app banner (`inApp`, `InAppNotificationGate`) | Optional: without it, a notification while open shows in the notification bar (`system`) |
+| 8 In-app banner (`inApp`, drawn by the app's overlay) | Optional: without it, a notification while open shows in the notification bar (`system`) |
 | 8 Notifications made on the phone (`notify`, `cancel`) | Optional |
 | 9 Rich notifications (actions, replies, images, groups, sounds, progress) | Optional, per feature |
 
@@ -293,8 +293,9 @@ Ignore a page your version doesn't have, and compare names exactly.
 
 ## 8. Inside the app, and notifications made on the phone
 
-- With `WhileOpen.banner` or `bannerOnly`, wrap the app (in `MaterialApp.builder`) with `InAppNotificationGate` and
-  give it the banner's look (`builder`) and motion (`transitionBuilder`); see the README.
+- With `WhileOpen.banner` or `bannerOnly`, draw `InAppNotifications.inApp` where the app shows its overlays (an app
+  shell's extension, or the example's `BannerHost`): `InAppNotificationBanner` for its look,
+  `InAppNotificationMotion` for its motion, dismissed after its time unless held; see the README.
 - `InAppNotifications.notify(id:, title:, body:, data:, at:)` shows one now, or schedules it for `at` (it shows even when
   the app is closed, and after a restart on Android once the receivers are declared); `cancel(id)` takes it away; a tap
   opens its `data` like a push's. A scheduled one fires by the **phone's** clock: if the app keeps a server clock, move
@@ -471,8 +472,8 @@ category's actions and, through the extension, the image.
 
 ### 9.6 The app's own banner
 
-`InAppNotificationGate`'s builder gets the message: offer its actions with `InAppNotifications.category(message.category)`
-and answer one with `InAppNotifications.answer(actionId, input:)`, which goes to `onAction` like an answer on the
+The app's overlay gets the message (`InAppNotifications.inApp`): offer its actions with
+`InAppNotifications.category(message.category)` and answer one with `InAppNotifications.answer(actionId, input:)`, which goes to `onAction` like an answer on the
 notification and takes the banner and its copy in the bar away. For a reply typed in the banner, call
 `InAppNotifications.hold(true)` when its field is focused, so the banner doesn't go while typing; an answer, a tap or a
 dismiss lets it go.

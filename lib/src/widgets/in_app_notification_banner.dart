@@ -25,8 +25,9 @@ typedef InAppNotificationReplyBuilder = Widget Function(
   VoidCallback send,
 );
 
-/// A ready banner for `InAppNotificationGate`'s builder: the message's title and body, its image, its category's actions
-/// as buttons and a reply field (holding the banner while typed in); a tap opens it, a swipe dismisses it. Everything
+/// A ready banner for the app to draw [InAppNotifications.inApp] with, where it shows its overlays: the message's title
+/// and body, its image, its category's actions as buttons and a reply field (holding the banner while typed in); a tap
+/// opens it, a swipe dismisses it. Everything
 /// it shows can be changed from the app: [style] for its look, and a builder for any part to replace it whole
 /// ([leading], [content], [actionBuilder], [replyBuilder], [container]).
 class InAppNotificationBanner extends StatelessWidget {
@@ -131,7 +132,7 @@ class InAppNotificationBanner extends StatelessWidget {
         ? card
         : AnnotatedRegion<SystemUiOverlayStyle>(value: style.statusBarStyle ?? _statusBarFor(_tone(decoration) ?? theme.colorScheme.surface), child: card);
 
-    // The gate sits above the app's pages, outside any Material: the reply field and buttons need one.
+    // The app's overlays sit above its pages, outside any Material: the reply field and buttons need one.
     // Its own layer, under the drag: moved, faded or dragged, the card is drawn once and its picture moved, and the
     // page under it isn't drawn again.
     final material = RepaintBoundary(

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:in_app_notifications/in_app_notifications.dart';
 
-/// The banner of in_app_notifications on its own: no setup, no pushes. Wrap the app in [InAppNotificationGate], call
-/// [InAppNotifications.show].
+import 'banner_host.dart';
+
+/// The banner of in_app_notifications on its own: no setup, no pushes. The app draws [InAppNotifications.inApp] where
+/// it shows its overlays ([BannerHost] here; an app shell's extension in a real app) and calls [InAppNotifications.show].
 void main() {
   // Optional: what a kind of message offers.
   InAppNotifications.categories = const [
@@ -49,14 +51,9 @@ class _ExampleAppState extends State<ExampleApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Banner example',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: const Color(0xFFFF704D)),
-      builder: (context, child) => InAppNotificationGate(
-        edge: _edge,
-        // The same banner, other ways, by name.
-        looks: {'toast': BannerLook.toast(), 'snackbar': BannerLook.snackbar(), 'popup': BannerLook.popup()},
-        builder: (context, message, onOpen, onDismiss) => InAppNotificationBanner(message: message, onOpen: onOpen, onDismiss: onDismiss),
-        child: child!,
-      ),
+      builder: (context, child) => BannerHost(edge: _edge, child: child!),
       home: _Home(edge: _edge, onEdge: (edge) => setState(() => _edge = edge)),
     );
   }
@@ -117,35 +114,11 @@ class _HomeState extends State<_Home> {
             ),
             child: const Text('With a reply'),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            children: [
-              OutlinedButton(
-                onPressed: () => InAppNotifications.show(title: 'Copied', look: 'toast'),
-                child: const Text('Toast'),
-              ),
-              OutlinedButton(
-                onPressed: () => InAppNotifications.show(
-                  message: const PushMessage(id: 'post', title: 'New post from Nadia', category: 'many'),
-                ),
-                child: const Text('Many actions'),
-              ),
-              OutlinedButton(
-                onPressed: () => InAppNotifications.show(
-                  message: const PushMessage(id: 'deleted', title: 'Message deleted', category: 'undo'),
-                  look: 'snackbar',
-                ),
-                child: const Text('Snackbar'),
-              ),
-              OutlinedButton(
-                onPressed: () => InAppNotifications.show(
-                  message: const PushMessage(id: 'match', title: "It's a match!", body: 'You and Nadia like each other', category: 'request'),
-                  look: 'popup',
-                ),
-                child: const Text('Popup'),
-              ),
-            ],
+          FilledButton(
+            onPressed: () => InAppNotifications.show(
+              message: const PushMessage(id: 'post', title: 'New post from Nadia', category: 'many'),
+            ),
+            child: const Text('Many actions'),
           ),
           const SizedBox(height: 24),
           Text(_last, key: const Key('last'), style: Theme.of(context).textTheme.titleMedium),

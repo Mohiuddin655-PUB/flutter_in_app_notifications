@@ -1,6 +1,6 @@
 name: in_app_notifications
 description: "Push notifications for any backend: the device token kept on the signed-in account, a push shown while the app is open, and the page a tapped one opens. No dependencies; the app gives the messaging, display and storage through delegates."
-version: 0.16.0
+version: 0.17.0
 repository: https://github.com/Mohiuddin655-PUB/flutter_in_app_notifications
 issue_tracker: https://github.com/Mohiuddin655-PUB/flutter_in_app_notifications/issues
 topics: [notifications, push, fcm, token]
@@ -9,10 +9,8 @@ environment:
   sdk: ^3.13.2
 
 screenshots:
-  - description: Every look of the in-app banner
-    path: doc/images/banner_looks.png
-  - description: The same looks in a real app on an iPhone
-    path: doc/images/banner_looks_ios.png
+  - description: The in-app banner with its actions
+    path: doc/images/banner.png
 
 dependencies:
   flutter:

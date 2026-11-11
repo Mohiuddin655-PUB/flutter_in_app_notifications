@@ -1,3 +1,16 @@
+## 0.17.0
+
+- **Breaking: the package no longer draws the app's overlays.** `InAppNotificationGate`, `BannerLook` (its toast,
+  snackbar and popup), the lanes, and `show()`'s `showFor`, `edge` and `padding` are gone: the app draws
+  `InAppNotifications.inApp` where it shows its other overlays (an app shell's extension, say), places it and dismisses
+  it after its time unless `holding`. The package keeps what only it can do: when a notification shows in the app and
+  when the phone shows it (`WhileOpen`), pushes, notifications made on the phone, schedules, the token, actions and
+  replies, `inApp`, `holding`, `open`, `dismiss`, `answer` and `opened`, and the banner itself
+  (`InAppNotificationBanner` with its drag, reply field, style and motion). `show(look:)` and `PushMessage.look` stay:
+  the name of the app's own look.
+- The example draws the banner in a small `BannerHost` of its own; the README and the app setup say how to show it,
+  with a new picture of it.
+
 ## 0.16.0
 
 - **Lanes**: a look with its own `lane` (`BannerLook(lane: 'toast')`; `BannerLook.toast()` has one) shows beside the
