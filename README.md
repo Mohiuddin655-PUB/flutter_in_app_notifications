@@ -2,221 +2,36 @@
 
 Push notifications for any push service and backend: the phone's **token** kept on the signed-in account, a push
 **shown while the app is open**, and the **page a tapped push opens**. It has no dependencies: the app gives the push
-service, the display and the storage through three small delegates.
+service, the display and the storage through small delegates.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/images/banner.png" width="300" alt="The in-app banner with its actions, at the top of an app">
+  <img src="https://raw.githubusercontent.com/Mohiuddin655-PUB/flutter_in_app_notifications/main/doc/images/banner.png" width="300" alt="An in-app notification with its actions, at the top of an app">
 </p>
 
-<sub>The in-app notification, with its actions (the example, Android emulator).</sub>
+<sub>An in-app notification, with its actions (the example, Android emulator).</sub>
 
 ## What it does
 
-- **Pushes and the phone's own notifications**, the same way: a token kept on the account, shown in the notification bar,
-  scheduled, cancelled.
-- **An in-app notification** while it is open, moving as Discord's: it comes down fading in and growing, a finger holds
-  it, a drag moves it exactly with the finger, a let-go carries it out from where it is or springs it back.
-- **Actions and replies** (Accept, Reject, a typed reply) on the notification and on the in-app notification, handled even when the
-  app was closed.
+- **Pushes and the phone's own notifications**, the same way: a token kept on the account, shown in the notification
+  bar, scheduled, cancelled.
+- **Inside the app while it is open**, when the app wants: it says which message to show and when it is held; the app
+  draws it where it shows its overlays.
+- **A ready in-app notification** (`InAppNotificationView`), moving as Discord's: it comes down fading in and growing,
+  a finger holds it, a drag moves it with the finger, a let-go carries it out or springs it back. Every visible part
+  is the app's: a style for the look, and a builder for any part.
+- **Actions and replies** (Accept, Reject, a typed reply) on the notification and inside the app, handled even when
+  the app was closed.
 - **Images, groups, sounds, badges, progress, urgent ones**, on Android and iOS.
-- **Every visible part is yours**: a style for the look, and a builder for any part. The motion, hold, drag and
-  actions stay the package's.
-- **Shown where your app shows its overlays**: the package says which message is in the in-app notification (`inApp`) and when it
-  is held; your overlay (an app shell, say) draws it, places it and dismisses it after its time. Toasts, snackbars and
-  popups are your overlay's; a message names one with `look`.
-- **No dependencies**: the push service, the display and the storage are your delegates; the native setup comes with the
-  package.
+- **Only notifications**: toasts, popups and other overlays are the app's.
 
-```dart
-InAppNotifications.setup(
-  messaging: FcmMessaging(),          // NotificationMessagingDelegate: Firebase Cloud Messaging, say
-  display: LocalDisplay(),            // NotificationDisplayDelegate: a local notifications plugin, say
-  tokens: FirestoreTokens(),          // TokenStoreDelegate: accounts/{uid}/devices/{token}, say
-  onError: (error, stack, where) => crashlytics.recordError(error, stack, reason: where),
-  unreachable: (error) => error is TimeoutException,
-);
-await InAppNotifications.init();      // at launch
-InAppNotifications.start(uid);        // at sign-in, or a launch still signed in
-await InAppNotifications.clear();     // before sign-out, while the account can still write
+## Use it
 
-// With whileOpen: WhileOpen.inApp, a notification while the app is open shows inside it: the app draws
-// InAppNotifications.inApp where it shows its overlays (an app shell's extension, say; the example's InAppNotificationHost is the
-// smallest one). The package's in-app notification does the work (actions, a reply field that holds it, tap, swipe); every visible
-// part is the app's:
-InAppNotificationView(
-  message: message,                       // InAppNotifications.inApp.value
-  onOpen: InAppNotifications.open,
-  onDismiss: InAppNotifications.dismiss,
-  style: InAppNotificationStyle(
-    decoration: BoxDecoration(color: myCard, borderRadius: BorderRadius.circular(20)),
-    titleStyle: myTitle,
-    bodyStyle: myBody,
-    actionStyle: TextButton.styleFrom(foregroundColor: myAccent),
-  ),
-  leading: (context, message) => MyAvatar(message),         // optional: replace a part whole
-  actionBuilder: (context, action, onPressed) => MyChip(action.title, onTap: onPressed),
-);
-// Its motion: InAppNotificationMotion.transitionAt(InAppNotificationEdge.top) (Discord's). Its time is the overlay's: it calls
-// dismiss() after a few seconds, but not while InAppNotifications.holding (a finger on it, a reply typed).
-// Or an in-app notification entirely the app's own: any widget, with InAppNotifications.category(message.category) for its
-// actions, InAppNotifications.answer(actionId, input:) to answer, and InAppNotifications.hold(true) while typing.
+1. **[Setup, A to Z](doc/setup.md)**: everything an app does, step by step, in code.
+2. [App setup, in depth](doc/app_setup.md): each step explained.
+3. [Android setup](doc/android_setup.md): Firebase, desugaring, the manifest, and how Android behaves when testing.
+4. [iOS setup](doc/ios_setup.md): the APNs key, Push Notifications and Background Modes, the AppDelegate, a push's
+   image, and how iOS behaves when testing.
 
-// Actions: each kind of notification names what it offers; every answer comes to onAction, in the background too.
-InAppNotifications.setup(
-  // ...
-  categories: [
-    NotificationCategory(id: 'chat', actions: [
-      NotificationAction(id: 'reply', title: 'Reply', input: true, inputHint: 'Message', inputButton: 'Send'),
-    ]),
-    NotificationCategory(id: 'request', actions: [
-      NotificationAction(id: 'accept', title: 'Accept'),
-      NotificationAction(id: 'reject', title: 'Reject', destructive: true),
-    ]),
-  ],
-  onAction: handleAction, // a top-level function: Future<void> handleAction(NotificationAnswer a) { a.actionId, a.input }
-);
-await InAppNotifications.notify(message: PushMessage(
-  id: 'chat-42', title: 'Nadia', body: 'Are you coming?', category: 'chat', group: 'chat-42',
-  image: 'https://…/photo.jpg', data: {'page': 'chats'},
-));
-// A push does the same through its data: {category, group, image, sound, badge, urgent, expanded} (NotificationKeys);
-// on iOS also send aps.category for its actions, and add a Notification Service Extension for its image.
-
-// The in-app notification alone (nothing in the notification bar, no push): a message the app tells itself.
-InAppNotifications.show(title: 'Saved', body: 'Your profile is up to date');
-InAppNotifications.show(message: PushMessage(id: 'match-7', title: 'A match!', category: 'request', data: {'page': 'likes'}));
-
-// A notification made on the phone: now, or scheduled.
-await InAppNotifications.notify(id: 'streak', title: 'Keep your streak', data: {'page': 'home'});
-await InAppNotifications.notify(id: 'reminder', title: 'See who liked you', at: DateTime(2026, 11, 10, 9), data: {'page': 'likes'});
-await InAppNotifications.notify(id: 'break', title: 'Back to it?', after: const Duration(minutes: 30));
-await InAppNotifications.cancel('reminder');
-
-InAppNotifications.opened.addListener(() {
-  final data = InAppNotifications.take(); // {'page': 'chats', ...}
-});
-```
-
-## Just the in-app notification (no setup)
-
-The in-app notification works on its own, without pushes, delegates, Firebase or any native setup. Two steps:
-
-```dart
-// 1. Draw InAppNotifications.inApp where the app shows its overlays: an app shell's extension, or a place of its own
-//    over the pages (the example's InAppNotificationHost: InAppNotificationView in an AnimatedSwitcher with
-//    InAppNotificationMotion, dismissed after its time unless held, with its own Overlay for the reply field).
-MaterialApp(builder: (context, child) => InAppNotificationHost(edge: InAppNotificationEdge.top, child: child!));
-
-// 2. Show a message from anywhere.
-InAppNotifications.show(title: 'Saved', body: 'Your profile is up to date');
-```
-
-Optional, still without setup:
-
-```dart
-// Actions on the in-app notification: name them once, then listen.
-InAppNotifications.categories = [
-  NotificationCategory(id: 'request', actions: [
-    NotificationAction(id: 'accept', title: 'Accept'),
-    NotificationAction(id: 'reject', title: 'Reject', destructive: true),
-  ]),
-];
-InAppNotifications.show(message: PushMessage(id: 'req-1', title: 'Rafi wants to connect', category: 'request'));
-InAppNotifications.actions.listen((a) => print(a.actionId)); // accept / reject, a.input for a reply
-InAppNotifications.opened.addListener(() => print(InAppNotifications.take())); // a tapped in-app notification's data
-```
-
-Everything the in-app notification does (its motion, hold, drag, tap, actions and reply field) is the same with or without setup.
-What needs `setup()` is only pushes, the notification bar, scheduling and the token.
-
-## Other looks: the app's own, by name
-
-Toasts, snackbars and popups are the app's overlay's, not the package's: a message names the look it wants with
-`look`, and the app draws it that way (an app shell's look by that tag, say). The package only keeps the name.
-
-```dart
-InAppNotifications.show(title: 'Copied', look: 'toast');
-InAppNotifications.show(message: PushMessage(id: 'match', title: "It's a match!", category: 'request'), look: 'popup');
-```
-
-A push or a notification made on the phone names one with `look` in its data (`NotificationKeys.look`), while the app
-is open; none (or one the app doesn't know) is the app's usual look.
-
-## While the app is open
-
-`setup(whileOpen: ...)` says where a push or a notification made on the phone shows while the app is open. In the
-background or closed, the notification bar shows it every time, and `show()` always uses the in-app notification.
-
-| `WhileOpen` | While the app is open | `show()` |
-| --- | --- | --- |
-| `bar` (default) | In the notification bar | In-app notification |
-| `in-app notification` | In-app notification, and quietly in the notification bar | In-app notification |
-| `bannerOnly` | Only the in-app notification | In-app notification |
-
-The in-app notification shows where the app's overlay puts it: at the top, or at the bottom with `InAppNotificationEdgeScope(edge:
-InAppNotificationEdge.bottom)` around it and `InAppNotificationMotion.transitionAt(InAppNotificationEdge.bottom)` for its motion, so it comes
-up from there and is swiped down to go.
-
-## Setup
-
-1. [App setup](doc/app_setup.md): the dependencies, the three delegates (FCM, flutter_local_notifications, Firestore),
-   `setup`, `start` and `clear`, the permission, opening the right page, the in-app in-app notification, and notifications made on
-   the phone.
-2. [Android setup](doc/android_setup.md): Firebase, desugaring, the manifest (permissions, the scheduled-notification
-   receivers, the default channel and icon), and how Android behaves when testing.
-3. [iOS setup](doc/ios_setup.md): the APNs key in Firebase, Push Notifications and Background Modes, the AppDelegate,
-   which plugins not to add, and testing on a simulator.
-
-### Native checklist
-
-The package is a plugin: it brings its own native setup, so the app adds **nothing for it**:
-
-- Android: with flutter_local_notifications in the app, the `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED`
-  permissions and that plugin's receivers come in through the package's manifest (an app without it gets none).
-- iOS: the package answers how a notification shows while the app is open (a push as Firebase's options say, kept in
-  the list when the app shows its own in-app notification; one made on the phone as it asks), and passes everything else on.
-
-What only the app can do, because no package can. **Required** is needed for pushes to work at all; **For …** only
-when the app uses that feature:
-
-| Need | Where | What |
-| --- | --- | --- |
-| Required | `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist` | the app's Firebase config |
-| Required | `android/app/build.gradle.kts` | `isCoreLibraryDesugaringEnabled = true` and `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")` (flutter_local_notifications needs it) |
-| Required | Firebase console › Cloud Messaging | the APNs authentication key (`.p8`), Key ID and Team ID |
-| Required | Xcode › Signing & Capabilities | Push Notifications, and Background Modes › Remote notifications |
-| Required | `ios/Runner/AppDelegate.swift` | `UNUserNotificationCenter.current().delegate = self` before `super.application(...)` (so taps reach the plugins) |
-| Required | Pubspec | no plugin that takes the notification delegate for every notification (`awesome_notifications`) |
-| Recommended | `AndroidManifest.xml` | FCM's `default_notification_channel_id`, `default_notification_icon`, `default_notification_color` (otherwise a system-shown push uses Android's defaults) |
-| Recommended | `res/drawable*/ic_stat.png`, `res/values/colors.xml` | a white-on-transparent small icon and its colour (otherwise the app icon, shown as a grey square) |
-| For push images on iOS | Xcode + `ios/Podfile` | a `NotificationService` extension of one line (`class NotificationService: InAppNotificationService {}`) and the `InAppNotificationsService` pod on it (ios_setup.md §4) |
-| For time-sensitive on iOS | Xcode › Signing & Capabilities | Time Sensitive Notifications (`urgent: true`; without it iOS shows it as active) |
-
-Each line is explained in the platform guide.
-
-## How it works
-
-- **Token**: asked at `start`, saved through `TokenStoreDelegate.save` only when it differs from the copy last saved on
-  the phone (`saved` / `remember`), so a launch writes nothing. A refreshed token is saved and the old one removed.
-  `clear` removes it from the account and lets it go (`forgetToken`), so pushes to it stop even when the removal
-  couldn't reach the server; it also drops a tapped push not yet taken and every push still shown
-  (`NotificationDisplayDelegate.clearShown`), so none opens a page for the next account.
-- **Shown while open**: each push from `NotificationMessagingDelegate.received` with a title or a body goes to
-  `NotificationDisplayDelegate.show` (which does nothing where the platform shows it itself, as iOS does).
-- **While the app is open, everything the same way**: with `inApp`, a push and a notification made on the phone both
-  show inside the app and go into the notification bar quietly (`NotificationDisplayDelegate.keep` / `notify(quiet:)`);
-  a scheduled one whose time comes while the app is open does too (`ScheduleStoreDelegate`: timers while open, the
-  phone's alarms once hidden).
-- **Inside the app instead**: with `setup(whileOpen: WhileOpen.inApp)` (or `bannerOnly`), such a push goes to
-  `InAppNotifications.inApp` (the newest replaces the one before) and not to the notification bar; the app shows it
-  (an in-app notification at its top, say) and calls `open()` when it is tapped or `dismiss()` when it goes. In the background or
-  closed, the system shows it in the notification bar either way.
-- **Tapped**: a push tapped in the background (`NotificationMessagingDelegate.tapped`), one that started the app (`initial`), and
-  one shown while open (`NotificationDisplayDelegate.tapped` / `initial`) all put their data in `opened`, which waits until the app
-  is ready to `take` it.
-- **Errors**: every delegate call is caught; `onError` gets it unless `unreachable` says it was only offline.
-
-## Server side
-
-Send to the tokens kept on the account, with the data your app reads in `opened` (a page, an id). A token the push
-service says is no longer registered can be deleted there.
+Ready code to copy: [push_example](push_example/lib) (Firebase Cloud Messaging, flutter_local_notifications,
+Firestore, shared_preferences). The [example](example/lib) shows an in-app notification on its own, with actions and a
+reply.

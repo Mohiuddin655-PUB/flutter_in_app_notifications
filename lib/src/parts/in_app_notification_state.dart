@@ -6,7 +6,7 @@ import '../models/notification_action.dart';
 import '../models/notification_answer.dart';
 import '../models/push_message.dart';
 
-/// The in-app notification and what it is told, there whether or not `InAppNotifications.setup` ran: an app that only
+/// The in-app notification and what it is told, there whether or not `InAppNotifications.init` ran: an app that only
 /// uses the in-app notification (`show()`) needs nothing else. The app draws [inApp] where it shows its overlays.
 class InAppNotificationState {
   InAppNotificationState._();
@@ -26,7 +26,7 @@ class InAppNotificationState {
   /// Each action answered (a reply, Accept), on the in-app notification or a notification.
   final actions = StreamController<NotificationAnswer>.broadcast();
 
-  /// What each kind offers, by id: from `setup(categories:)` or `InAppNotifications.categories`.
+  /// What each kind offers, by id: from `init(categories:)` or `InAppNotifications.categories`.
   final categories = <String, NotificationCategory>{};
 
   /// The in-app notification is in use (a reply typed, a finger on it): it doesn't go by itself until every reason has

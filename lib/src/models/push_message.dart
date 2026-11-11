@@ -18,7 +18,6 @@ class PushMessage {
     this.ongoing = false,
     this.expanded = false,
     this.urgent = false,
-    this.look,
   });
 
   /// From a push's [data], whose [NotificationKeys] shape it.
@@ -36,7 +35,6 @@ class PushMessage {
       badge: int.tryParse(data[NotificationKeys.badge] ?? ''),
       expanded: data[NotificationKeys.expanded] == 'true',
       urgent: data[NotificationKeys.urgent] == 'true',
-      look: data[NotificationKeys.look],
     );
   }
 
@@ -56,7 +54,6 @@ class PushMessage {
     'ongoing': ongoing,
     'expanded': expanded,
     'urgent': urgent,
-    'look': look,
   };
 
   /// One kept with [toJson].
@@ -79,7 +76,6 @@ class PushMessage {
       ongoing: json['ongoing'] == true,
       expanded: json['expanded'] == true,
       urgent: json['urgent'] == true,
-      look: json['look'] as String?,
     );
   }
 
@@ -99,7 +95,6 @@ class PushMessage {
     bool? ongoing,
     bool? expanded,
     bool? urgent,
-    String? look,
   }) {
     return PushMessage(
       id: id ?? this.id,
@@ -116,7 +111,6 @@ class PushMessage {
       ongoing: ongoing ?? this.ongoing,
       expanded: expanded ?? this.expanded,
       urgent: urgent ?? this.urgent,
-      look: look ?? this.look,
     );
   }
 
@@ -155,10 +149,6 @@ class PushMessage {
 
   /// Breaks through Focus (iOS time-sensitive) and pops up (Android).
   final bool urgent;
-
-  /// The name of the look the app draws it in while open (its own looks: 'toast', 'popup'); the app's usual look when
-  /// null.
-  final String? look;
 
   /// Nothing to show: a data-only push.
   bool get silent => (title ?? '').isEmpty && (body ?? '').isEmpty;

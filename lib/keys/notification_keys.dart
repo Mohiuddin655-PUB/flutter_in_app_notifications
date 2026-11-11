@@ -1,5 +1,9 @@
 /// The keys a push's data may carry to shape its notification (`PushMessage.fromData`); the rest is the app's own.
 abstract final class NotificationKeys {
+  /// A data-only push's title and body (one that has no notification part, so the app shows it itself).
+  static const title = 'title';
+  static const body = 'body';
+
   /// An image's address (https) shown with it.
   static const image = 'image';
 
@@ -23,8 +27,4 @@ abstract final class NotificationKeys {
 
   /// `true`: its whole body shows when expanded.
   static const expanded = 'expanded';
-
-  /// The name of the look the app draws it in while open (its own looks: a toast, a popup); the app's usual look when
-  /// none or unknown.
-  static const look = 'look';
 }

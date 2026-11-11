@@ -4,8 +4,7 @@ import 'package:in_app_notifications/in_app_notifications.dart';
 import 'in_app_notification_host.dart';
 
 /// The in-app notification of in_app_notifications on its own: no setup, no pushes. The app draws
-/// [InAppNotifications.inApp] where it shows its overlays ([InAppNotificationHost] here; an app shell's extension in a
-/// real app) and calls [InAppNotifications.show].
+/// [InAppNotifications.inApp] where it shows its overlays ([InAppNotificationHost] here) and calls [InAppNotifications.show].
 void main() {
   // Optional: what a kind of message offers.
   InAppNotifications.categories = const [

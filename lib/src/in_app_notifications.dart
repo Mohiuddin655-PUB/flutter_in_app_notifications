@@ -17,13 +17,13 @@ import 'parts/kit.dart';
 import 'parts/native_actions.dart';
 
 /// Notifications in the app. The in-app notification works on its own: the app draws [inApp] where it shows its
-/// overlays (with `InAppNotificationView`, through its app shell, say), dismisses it after its time and calls [show];
-/// no setup. Pushes and the phone's notifications need [setup] once with the app's delegates, [init] at launch, [start]
+/// overlays (with `InAppNotificationView`), dismisses it after its time and calls [show];
+/// no init. Pushes and the phone's notifications need [init] once at launch with the app's delegates, [start]
 /// at sign-in and [clear] before sign-out. A tapped one's data waits in [opened] until the app [take]s it.
 class InAppNotifications {
   const InAppNotifications._();
 
-  /// The in-app notification's state, there with or without [setup].
+  /// The in-app notification's state, there with or without [init].
   static final _b = InAppNotificationState.i;
 
   static Kit? _kit;
@@ -31,16 +31,17 @@ class InAppNotifications {
   /// Each [show] without an id is an in-app notification of its own.
   static var _shown = 0;
 
-  static Kit get _k => _kit ?? (throw StateError('InAppNotifications.setup must be called first (only the banner works without it).'));
+  static Kit get _k => _kit ?? (throw StateError('InAppNotifications.init must be called first (only the in-app notification works without it).'));
 
-  // ---- Setup: only for pushes and the phone's notifications ----
+  // ---- Init: only for pushes and the phone's notifications ----
 
-  /// [whileOpen]: where a notification that comes while the app is open shows ([WhileOpen.bar] by default).
-  /// [schedules]: where scheduled notifications are kept, so one whose time comes while the app is open shows as
-  /// [whileOpen] says too; without it the phone shows them by itself. [now]: the clock scheduled times are read by (the
-  /// server's, say). [unreachable]: the error only says the backend couldn't be reached (offline), so it isn't
-  /// reported.
-  static void setup({
+  /// At launch, once (after Firebase is up): keeps the app's delegates, then shows pushes that come while the app is
+  /// open and takes the one whose tap started it. [whileOpen]: where a notification that comes while the app is open
+  /// shows ([WhileOpen.bar] by default). [schedules]: where scheduled notifications are kept, so one whose time comes
+  /// while the app is open shows as [whileOpen] says too; without it the phone shows them by itself. [now]: the clock
+  /// scheduled times are read by (the server's, say). [unreachable]: the error only says the backend couldn't be
+  /// reached (offline), so it isn't reported.
+  static Future<void> init({
     required NotificationMessagingDelegate messaging,
     required NotificationDisplayDelegate display,
     required TokenStoreDelegate tokens,
@@ -53,20 +54,17 @@ class InAppNotifications {
     bool Function(Object error)? unreachable,
   }) {
     // Once: a second kit would listen again, and show each push twice.
-    assert(_kit == null, 'InAppNotifications.setup is called once');
-    if (_kit != null) return;
-    _kit = Kit(messaging, display, tokens, schedules, categories, _b, whileOpen, now ?? DateTime.now, onError, unreachable)..responses.handler = onAction;
+    assert(_kit == null, 'InAppNotifications.init is called once');
+    _kit ??= Kit(messaging, display, tokens, schedules, categories, _b, whileOpen, now ?? DateTime.now, onError, unreachable)..responses.handler = onAction;
+    return _k.init();
   }
-
-  /// At launch: shows pushes that come while the app is open, and takes the one whose tap started it.
-  static Future<void> init() => _k.init();
 
   /// [uid] is signed in (a login, or a launch still signed in): its token is kept on the account.
   static void start(String uid) => _k.tokens.start(uid);
 
   /// Before sign-out or deleting the account, while it may still write: its token is taken off and let go, and what it
   /// was told goes with it (a tapped one not yet taken, the in-app notification, those in the notification bar).
-  /// Without [setup], only the in-app notification's are let go.
+  /// Without [init], only the in-app notification's are let go.
   static Future<void> clear() async {
     final kit = _kit;
     kit == null ? _b.clear() : await kit.clear();
@@ -74,7 +72,7 @@ class InAppNotifications {
 
   /// A notification made on the phone (a reminder, say), in the notification bar: now, at [at] (a plain time, such as
   /// `DateTime(2026, 11, 10, 10)` for 10am), or [after] a while (scheduled; it shows even when the app is closed).
-  /// Times are read by `setup(now:)`'s clock. While the app is open it shows as [WhileOpen] says, as a push does.
+  /// Times are read by `init(now:)`'s clock. While the app is open it shows as [WhileOpen] says, as a push does.
   /// [message] says how it shows (an image, a group, a category's actions, a sound, progress); [id], [title], [body]
   /// and [data] are the short way for a plain one. False when it couldn't be made.
   static Future<bool> notify({
@@ -99,20 +97,17 @@ class InAppNotifications {
     await _k.display.cancel(id);
   }, 'cancel');
 
-  // ---- The in-app notification: works without setup ----
+  // ---- The in-app notification: works without init ----
 
-  /// [message] inside the app ([inApp]), with nothing in the notification bar and no push: a message the app
-  /// tells itself (a saved change, a match found). Works without [setup]. Its actions and a tap work as any other's.
-  /// [id], [title], [body] and [data] are the short way for a plain one. [look] names how the app draws it (its own
-  /// look by that name), as a push's does in its data.
-  static void show({String? id, String? title, String? body, Map<String, String> data = const {}, PushMessage? message, String? look}) {
+  /// [message] inside the app ([inApp]), with nothing in the notification bar and no push: a message the app tells
+  /// itself (a saved change, a match found). Works without [init]. Its actions and a tap work as any other's. [id],
+  /// [title], [body] and [data] are the short way for a plain one.
+  static void show({String? id, String? title, String? body, Map<String, String> data = const {}, PushMessage? message}) {
     assert(message != null || id != null || title != null, 'show needs a message, an id or a title');
-    var shown = message ?? PushMessage(id: id ?? 'banner-${_shown++}', title: title, body: body, data: data);
-    if (look != null) shown = shown.copyWith(look: look);
-    _b.present(shown);
+    _b.present(message ?? PushMessage(id: id ?? 'banner-${_shown++}', title: title, body: body, data: data));
   }
 
-  /// What each kind of message offers (its actions), for the in-app notification without [setup]; [setup]'s
+  /// What each kind of message offers (its actions), for the in-app notification without [init]; [init]'s
   /// `categories` set them too.
   static set categories(List<NotificationCategory> categories) {
     _b.categories
@@ -141,7 +136,7 @@ class InAppNotifications {
     _b.inApp.value = null;
   }
 
-  /// An action from the in-app notification: handled as if answered on a notification (`setup(onAction:)`, and
+  /// An action from the in-app notification: handled as if answered on a notification (`init(onAction:)`, and
   /// [actions]), and the in-app notification goes.
   static void answer(String actionId, {String? input}) {
     final message = _b.inApp.value;
@@ -174,7 +169,7 @@ class InAppNotifications {
   /// Whether the in-app notification is held ([hold]).
   static ValueListenable<bool> get holding => _b.holding;
 
-  /// Seen in the in-app notification: its copy in the notification bar goes too (with [setup]; on iOS a push's
+  /// Seen in the in-app notification: its copy in the notification bar goes too (with [init]; on iOS a push's
   /// natively).
   static void _seen(String id) {
     final kit = _kit;

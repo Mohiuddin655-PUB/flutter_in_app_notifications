@@ -1,459 +1,104 @@
-# App setup
+# App setup, in depth
 
-Everything the app does to use `in_app_notifications`, in order. The package has no dependencies: the app brings the
-push service, the display and the storage, and hands them over as three delegates. The examples use Firebase Cloud
-Messaging, `flutter_local_notifications`, Firestore and `shared_preferences`; any other works the same way.
+Each step of [setup.md](setup.md), explained; the dependencies are in [pubspec_setup.md](pubspec_setup.md). The ready
+code is in [push_example](../push_example/lib): copy its files into the app and change only what is yours (the channels,
+the categories, the Firestore path). It uses Firebase Cloud Messaging, flutter_local_notifications, Firestore and
+shared_preferences; any other push service, display or storage works the same way, through the same delegates.
 
-Then follow [android_setup.md](android_setup.md) and [ios_setup.md](ios_setup.md) for the platforms.
+## 1. The messaging delegate (the push service)
 
-| Step | Need |
-| --- | --- |
-| 1 Dependencies, 2 messaging delegate, 3 display delegate, 4 token store, 5 setup/start/clear | **Required** |
-| 6 The permission | **Required** (nothing shows on Android 13+ and iOS without it) |
-| 7 Opening the right page | **Required** when a tap should open a page |
-| 4b Schedule store | Optional: only so a scheduled notification whose time comes while the app is open shows inside it |
-| 8 In-app in-app notification (`inApp`, drawn by the app's overlay) | Optional: without it, a notification while open shows in the notification bar (`system`) |
-| 8 Notifications made on the phone (`notify`, `cancel`) | Optional |
-| 9 Rich notifications (actions, replies, images, groups, sounds, progress) | Optional, per feature |
+[fcm_messaging_delegate.dart](../push_example/lib/fcm_messaging_delegate.dart): the token, a push received while open,
+tapped, or that started the app.
 
-## 1. Dependencies
+- `init` sets the handler for a push while the app isn't in front (`background`), so `InAppNotifications.init` does it.
+- An iPhone has no token until Apple has registered it: `token` waits a moment, and `tokenRefreshes` brings it later.
+- iOS sends a push's category and thread in `aps`, not in the data: it adds them, so a push offers the same actions
+  inside the app.
+- A data-only push carries its title and body in its data (`NotificationKeys.title`, `body`).
 
-```yaml
-dependencies:
-  in_app_notifications:
-    git:
-      url: https://github.com/Mohiuddin655-PUB/flutter_in_app_notifications.git
-      ref: <commit>                       # pin a commit; read CHANGELOG.md before moving it
-  firebase_core: ^4.0.0
-  firebase_messaging: ^16.0.0             # the push service
-  flutter_local_notifications: ^23.0.0    # shows a push while open on Android, and notifications made on the phone
-  timezone: ^0.11.0                       # a scheduled notification's moment
-  cloud_firestore: ^6.0.0                 # where the tokens are kept (or your own backend)
-  shared_preferences: ^2.0.0              # the token last saved, on the phone (or your own store)
-```
+## 2. The display delegate (the notification bar)
 
-Use **one** local notifications plugin. A plugin that makes itself iOS's notification delegate for every push (such as
-`awesome_notifications`) decides how *every* push shows while the app is open, so the system in-app notification can't be turned
-off and a push shows twice with `WhileOpen.inApp`.
+[local_display_delegate.dart](../push_example/lib/local_display_delegate.dart) and
+[local_notification_details.dart](../push_example/lib/local_notification_details.dart): shows, keeps, schedules and
+cancels notifications on the phone; a tap or an action comes back as a `NotificationAnswer`.
 
-## 2. The messaging delegate (the push service)
+- `systemWhileOpen`: true only with `WhileOpen.bar`; otherwise iOS doesn't show a push itself while the app is open.
+- Android doesn't show a push while the app is open: `show` shows it, and `keep` puts it in the bar quietly.
+- Each notification's id travels in its payload, so an answer knows which one it was.
+- The channels' ids and names, and the small icon, are the app's to change.
+- A message's details: its `image` (downloaded to a file first), `group`, `category` (its actions), `channel`, `sound`
+  (`res/raw` on Android, the app bundle on iOS), `badge`, `progress`, `expanded` and `urgent`, on both platforms.
+- Android 15+ keeps one answered with a typed reply on screen: `cancelShown` takes it away.
 
-```dart
-class FcmMessagingDelegate implements NotificationMessagingDelegate {
-  const FcmMessagingDelegate();
+## 3. The token store delegate (where the server finds the phones)
 
-  static FirebaseMessaging get _fcm => FirebaseMessaging.instance;
+[firestore_token_store_delegate.dart](../push_example/lib/firestore_token_store_delegate.dart): an account's tokens at
+`accounts/{uid}/devices/{token}`, and the one last saved from this phone, so a launch writes nothing. Guard the path
+with security rules: only the account itself writes its own devices.
 
-  /// An iPhone has no FCM token until Apple has registered it, which can take a moment after launch.
-  @override
-  Future<String?> token() async {
-    if (Platform.isIOS) {
-      for (var tries = 0; await _fcm.getAPNSToken() == null; tries++) {
-        if (tries == 2) return null; // the refresh stream brings it later
-        await Future<void>.delayed(const Duration(seconds: 1));
-      }
-    }
-    return _fcm.getToken().timeout(const Duration(seconds: 10));
-  }
+## 4. The schedule store delegate (scheduled notifications while open)
 
-  @override
-  Stream<String> get tokenRefreshes => _fcm.onTokenRefresh;
+[preferences_schedule_store_delegate.dart](../push_example/lib/preferences_schedule_store_delegate.dart): optional.
+With it, a scheduled notification whose time comes while the app is open shows inside the app as `whileOpen` says;
+without it, the phone shows it by itself.
 
-  @override
-  Future<void> forgetToken() => _fcm.deleteToken();
+## 5. Init, at launch
 
-  @override
-  Stream<PushMessage> get received => FirebaseMessaging.onMessage.map(_message);
+[push_setup.dart](../push_example/lib/push_setup.dart): call `PushSetup.init()` in `main`, before `runApp`. It starts
+Firebase and gives `InAppNotifications.init` everything, once. A failure inside goes to `onError`, never thrown: the
+app starts without pushes.
 
-  @override
-  Stream<PushMessage> get tapped => FirebaseMessaging.onMessageOpenedApp.map(_message);
+| `whileOpen` | While the app is open | In the background or closed |
+| --- | --- | --- |
+| `bar` (default) | In the notification bar | In the notification bar |
+| `inApp` | Inside the app (§8), and quietly in the notification bar | In the notification bar |
+| `inAppOnly` | Only inside the app (§8) | In the notification bar |
 
-  @override
-  Future<PushMessage?> initial() async {
-    final m = await _fcm.getInitialMessage();
-    return m == null ? null : _message(m);
-  }
+A push while the app isn't in front: iOS shows it itself (its actions from `aps.category`, its image through the
+extension in [ios_setup.md](ios_setup.md)); Android shows only plain ones itself, so one with actions or an image comes
+data-only, and [push_background.dart](../push_example/lib/push_background.dart) shows it.
 
-  static PushMessage _message(RemoteMessage m) => PushMessage(
-    id: m.messageId ?? '${m.sentTime?.millisecondsSinceEpoch}',
-    title: m.notification?.title,
-    body: m.notification?.body,
-    data: {for (final e in m.data.entries) e.key: '${e.value}'},
-  );
-}
-```
+## 6. With the account
 
-## 3. The display delegate (the notification bar)
+`start(uid)` at every sign-in, and at a launch still signed in: the token is saved on the account when it changed.
+`clear()` before sign-out and before deleting the account, while the account can still write: no token stays on it,
+nothing stays in the notification bar, and no tap is left to open a page for the next account.
 
-```dart
-class LocalDisplayDelegate implements NotificationDisplayDelegate {
-  /// False when the app shows a push itself while open (WhileOpen.inApp or bannerOnly).
-  const LocalDisplayDelegate({required this.systemWhileOpen});
-
-  final bool systemWhileOpen;
-
-  static const _channel = 'updates'; // the same id as AndroidManifest's default_notification_channel_id
-  static final _plugin = FlutterLocalNotificationsPlugin();
-  static final _taps = StreamController<Map<String, String>>.broadcast();
-
-  @override
-  Future<void> init() async {
-    await _plugin.initialize(
-      // Ask for the permission yourself, when it is needed and saying why (step 6), never here.
-      settings: const InitializationSettings(
-        android: AndroidInitializationSettings('ic_stat'),
-        iOS: DarwinInitializationSettings(requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false),
-      ),
-      onDidReceiveNotificationResponse: (r) => _taps.add(_data(r.payload)),
-    );
-    await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(const AndroidNotificationChannel(_channel, 'Notifications', importance: Importance.high));
-    // iOS shows a push itself while open unless told not to; with inApp the app shows it instead.
-    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(alert: systemWhileOpen, badge: true, sound: true);
-  }
-
-  /// Android doesn't show a push while the app is open; iOS does by itself.
-  @override
-  Future<void> show(PushMessage message) async {
-    if (Platform.isAndroid) await _show(message);
-  }
-
-  /// Android doesn't keep a push that came while open; iOS keeps it in its list (AppDelegate, ios_setup.md).
-  @override
-  Future<void> keep(PushMessage message) async {
-    if (Platform.isAndroid) await _show(message, quiet: true);
-  }
-
-  @override
-  Future<void> notify(PushMessage message, {DateTime? at, bool quiet = false}) async {
-    if (at == null || !at.isAfter(DateTime.now())) return _show(message, quiet: quiet); // or your server clock, step 8
-    await _plugin.zonedSchedule(
-      id: _id(message.id),
-      title: message.title,
-      body: message.body,
-      scheduledDate: TZDateTime.from(at.toUtc(), UTC),
-      notificationDetails: _details(false),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, // exact needs a permission
-      payload: jsonEncode(message.data),
-    );
-  }
-
-  @override
-  Future<void> cancel(String id) => _plugin.cancel(id: _id(id));
-
-  @override
-  Stream<Map<String, String>> get tapped => _taps.stream;
-
-  @override
-  Future<Map<String, String>?> initial() async {
-    final launch = await _plugin.getNotificationAppLaunchDetails();
-    final r = launch?.notificationResponse;
-    return launch?.didNotificationLaunchApp == true && r != null ? _data(r.payload) : null;
-  }
-
-  /// Every notification the app has in the bar (the system's pushes too), at sign-out.
-  @override
-  Future<void> clearShown() => _plugin.cancelAll();
-
-  Future<void> _show(PushMessage m, {bool quiet = false}) =>
-      _plugin.show(id: _id(m.id), title: m.title, body: m.body, notificationDetails: _details(quiet), payload: jsonEncode(m.data));
-
-  static int _id(String id) => id.hashCode & 0x7fffffff; // the same id replaces itself
-
-  /// [quiet]: into the bar or list only, no pop-up or sound (the app shows its own in-app notification for it).
-  static NotificationDetails _details(bool quiet) => NotificationDetails(
-    android: AndroidNotificationDetails(_channel, 'Notifications', importance: Importance.high, priority: Priority.high, silent: quiet),
-    iOS: DarwinNotificationDetails(presentBanner: !quiet, presentList: true, presentSound: !quiet, presentBadge: true),
-  );
-
-  static Map<String, String> _data(String? payload) {
-    if (payload == null || payload.isEmpty) return const {};
-    final map = jsonDecode(payload);
-    return map is Map ? {for (final e in map.entries) '${e.key}': '${e.value}'} : const {};
-  }
-}
-```
-
-## 4. The token store delegate (where the server finds the phones)
-
-```dart
-class FirestoreTokenStoreDelegate implements TokenStoreDelegate {
-  const FirestoreTokenStoreDelegate(this.prefs);
-
-  final SharedPreferences prefs;
-
-  static DocumentReference _doc(String uid, String token) =>
-      FirebaseFirestore.instance.doc('accounts/$uid/devices/$token');
-
-  @override
-  Future<void> save(String uid, String token) => _doc(uid, token)
-      .set({'platform': Platform.isIOS ? 'ios' : 'android', 'at': FieldValue.serverTimestamp()})
-      .timeout(const Duration(seconds: 10));
-
-  /// Short: sign-out waits for it.
-  @override
-  Future<void> remove(String uid, String token) => _doc(uid, token).delete().timeout(const Duration(seconds: 3));
-
-  @override
-  String? saved(String uid) => prefs.getString('push_token_$uid');
-
-  @override
-  Future<void> remember(String uid, String? token) =>
-      token == null ? prefs.remove('push_token_$uid') : prefs.setString('push_token_$uid', token);
-}
-```
-
-Firestore rules for it: only the owner saves (two fields, the server's time) or removes its own phones.
-
-```
-match /accounts/{uid}/devices/{token} {
-  allow read: if request.auth.uid == uid;
-  allow create, update: if request.auth.uid == uid && token.size() <= 4096
-    && request.resource.data.keys().hasOnly(['platform', 'at']) && request.resource.data.keys().hasAll(['platform', 'at'])
-    && request.resource.data.platform in ['android', 'ios'] && request.resource.data.at == request.time;
-  allow delete: if request.auth.uid == uid;
-}
-```
-
-## 4b. The schedule store delegate (scheduled notifications while open)
-
-```dart
-class PreferencesScheduleStoreDelegate implements ScheduleStoreDelegate {
-  const PreferencesScheduleStoreDelegate(this.prefs);
-
-  final SharedPreferences prefs;
-
-  @override
-  String? read() => prefs.getString('push_schedules');
-
-  @override
-  Future<void> write(String? text) => text == null ? prefs.remove('push_schedules') : prefs.setString('push_schedules', text);
-}
-```
-
-With it, a scheduled notification whose time comes while the app is open shows like any other (inside the app, and
-quietly in the bar): the kit waits on a timer while the app is on screen and gives the time back to the phone's alarm
-once it is hidden. Without it, the phone shows it by itself.
-
-## 5. Setup, start, clear
-
-```dart
-// At launch, after Firebase.initializeApp. A failure inside is reported, never thrown: the app starts without pushes.
-const whileOpen = WhileOpen.inApp; // or bar (the default), or bannerOnly
-InAppNotifications.setup(
-  messaging: const FcmMessagingDelegate(),
-  display: const LocalDisplayDelegate(systemWhileOpen: whileOpen == WhileOpen.bar),
-  tokens: FirestoreTokenStoreDelegate(prefs),
-  schedules: PreferencesScheduleStoreDelegate(prefs),
-  whileOpen: whileOpen,
-  now: () => DateTime.now(), // or the server's clock
-  onError: (error, stack, where) => FirebaseCrashlytics.instance.recordError(error, stack, reason: where),
-  unreachable: (error) => error is TimeoutException || (error is FirebaseException && error.code == 'unavailable'),
-);
-await InAppNotifications.init();
-
-// At every sign-in, and at a launch that is still signed in.
-InAppNotifications.start(uid);
-
-// Before sign-out and before deleting the account, while the account can still write.
-await InAppNotifications.clear();
-```
-
-`start` saves the token only when it changed (a launch writes nothing); `clear` removes it from the account, lets it go
-on the phone, and takes away every notification in the bar and any tap not yet handled, so nothing opens a page for the
-next account.
-
-## 6. The permission
+## 7. The permission
 
 Android 13+ and iOS show nothing in the notification bar without it. Ask when it is needed, saying why (an onboarding
 step, say), and remember on the phone that it was asked. **Also ask once on the home page when it was never asked on
-this phone**: someone who signs in on a new phone, or after a reinstall, skips the onboarding and would otherwise never
-be asked. On Android ask with the system's request (`permission_handler`), then `FirebaseMessaging.requestPermission()`,
-which is what asks on iOS. When it is off for good, offer the phone's Settings.
+this phone**: someone who signs in on a new phone, or after a reinstall, skips the onboarding. On Android ask with the
+system's request (`permission_handler`), then `FirebaseMessaging.requestPermission()`, which is what asks on iOS. When
+it is off for good, offer the phone's Settings.
 
-## 7. Opening the right page
+## 8. Shown inside the app
 
-A push's data names where it goes (`{'page': 'chats'}`, say). Listen once the home page is up:
+With `inApp` or `inAppOnly`, the package says which message is in it (`InAppNotifications.inApp`) and when it is held
+(`InAppNotifications.holding`); the app draws it where it shows its overlays, and:
 
-```dart
-void _openPushed() {
-  final data = InAppNotifications.opened.value;
-  if (data == null) return;
-  InAppNotifications.take();
-  // Close whatever is open over the tabs (a page, a sheet, a dialog), so the tab shows.
-  final home = ModalRoute.of(context);
-  Navigator.of(context).popUntil((r) => r == home || r.isFirst);
-  selectTab(data['page']);
-}
-// initState: _openPushed() for a push that started the app; then InAppNotifications.opened.addListener(_openPushed).
-```
+- shows `InAppNotificationView` for it, coming and going with `InAppNotificationMotion.transitionAt(edge)`;
+- calls `InAppNotifications.dismiss()` after a few seconds, but not while `holding` (a finger on it, a reply typed);
+- keeps it above the keyboard, and gives it its own `Overlay` (`Overlay.wrap`) so its reply field can be focused;
+- at the bottom, puts `InAppNotificationEdgeScope(edge: InAppNotificationEdge.bottom)` around it.
 
-Ignore a page your version doesn't have, and compare names exactly.
-
-## 8. Inside the app, and notifications made on the phone
-
-- With `WhileOpen.inApp` or `bannerOnly`, draw `InAppNotifications.inApp` where the app shows its overlays (an app
-  shell's extension, or the example's `InAppNotificationHost`): `InAppNotificationView` for its look,
-  `InAppNotificationMotion` for its motion, dismissed after its time unless held; see the README.
-- `InAppNotifications.notify(id:, title:, body:, data:, at:)` shows one now, or schedules it for `at` (it shows even when
-  the app is closed, and after a restart on Android once the receivers are declared); `cancel(id)` takes it away; a tap
-  opens its `data` like a push's. A scheduled one fires by the **phone's** clock: if the app keeps a server clock, move
-  `at` by how far the server is ahead of the phone. A phone can only schedule for itself: to reach someone at 10am in
-  their time zone, keep their zone with their token and send from the server.
-
-## 9. Rich notifications: actions, replies, images, groups
-
-Everything below is optional; a plain app stops at step 8.
-
-### 9.1 Categories and the action handler
-
-Each kind of notification names its actions once, in `setup`. Every answer (a tap on Accept, a typed reply) comes to
-`onAction`, in the background too, so it must be a **top-level or static function** that sets up what it needs itself
-(a background isolate has none of the app's state):
+The example's [InAppNotificationHost](../example/lib/in_app_notification_host.dart) does all of this in one small
+widget, ready to copy:
 
 ```dart
-const categories = [
-  NotificationCategory(id: 'chat', actions: [
-    NotificationAction(id: 'reply', title: 'Reply', input: true, inputHint: 'Message', inputButton: 'Send'),
-  ]),
-  NotificationCategory(id: 'request', actions: [
-    NotificationAction(id: 'accept', title: 'Accept'),
-    NotificationAction(id: 'reject', title: 'Reject', destructive: true),
-  ]),
-];
-
-@pragma('vm:entry-point')
-Future<void> handleAction(NotificationAnswer a) async {
-  if (Firebase.apps.isEmpty) await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  switch (a.actionId) {
-    case 'reply': await sendMessage(a.data['chatId']!, a.input ?? '');
-    case 'accept': await acceptRequest(a.data['from']!);
-    case 'reject': await rejectRequest(a.data['from']!);
-  }
-}
-
-InAppNotifications.setup(
-  // ...the delegates of steps 2 to 5
-  categories: categories,
-  onAction: handleAction,
-);
-InAppNotifications.actions.listen((a) { /* a screen that wants to know, while the app runs */ });
+MaterialApp(builder: (context, child) => InAppNotificationHost(edge: InAppNotificationEdge.top, child: child!));
 ```
 
-### 9.2 The display delegate, rich
+It works without `init` too: `show()` and `InAppNotifications.categories = [...]` need nothing else.
 
-`init` takes the categories (iOS must register them first; Android puts them on each notification), and an answer
-comes back as a `NotificationAnswer`. Keep the notification's own id in the payload, so an answer knows which one it
-was, and pass flutter_local_notifications a **static** background callback for an action answered while the app isn't
-running:
+## 9. Sending one
 
-```dart
-class LocalDisplayDelegate implements NotificationDisplayDelegate {
-  const LocalDisplayDelegate({required this.systemWhileOpen, this.background});
+`notify(id:, title:, body:, data:)` shows one now; with `at:` or `after:` it is scheduled, and shows even when the app
+is closed. `cancel(id)` takes it away. `show()` shows one only inside the app. A scheduled one fires by the **phone's**
+clock: with a server clock, move `at` by how far the server is ahead. A phone schedules only for itself: to reach
+someone at 10am in their time zone, send from the server.
 
-  final bool systemWhileOpen;
-  final void Function(NotificationResponse r)? background; // flutter_local_notifications' response
-
-  static final _plugin = FlutterLocalNotificationsPlugin();
-  static final _answers = StreamController<NotificationAnswer>.broadcast();
-  static var _categories = <String, NotificationCategory>{};
-
-  @override
-  Future<void> init({List<NotificationCategory> categories = const []}) async {
-    _categories = {for (final c in categories) c.id: c};
-    await _plugin.initialize(
-      settings: InitializationSettings(
-        android: const AndroidInitializationSettings('ic_stat'),
-        iOS: DarwinInitializationSettings(
-          requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false,
-          notificationCategories: [
-            for (final c in categories)
-              DarwinNotificationCategory(c.id, actions: [
-                for (final a in c.actions)
-                  a.input
-                      ? DarwinNotificationAction.text(a.id, a.title, buttonTitle: a.inputButton ?? a.title, placeholder: a.inputHint)
-                      : DarwinNotificationAction.plain(a.id, a.title, options: {
-                          if (a.destructive) DarwinNotificationActionOption.destructive,
-                          if (a.opensApp) DarwinNotificationActionOption.foreground,
-                        }),
-              ]),
-          ],
-        ),
-      ),
-      onDidReceiveNotificationResponse: (r) => _answers.add(answerOf(r.id, r.actionId, r.input, r.payload)),
-      onDidReceiveBackgroundNotificationResponse: background,
-    );
-    // ...the channel and setForegroundNotificationPresentationOptions, as in step 3
-  }
-
-  @override
-  Stream<NotificationAnswer> get responses => _answers.stream;
-
-  @override
-  Future<NotificationAnswer?> initial() async {
-    final launch = await _plugin.getNotificationAppLaunchDetails();
-    final r = launch?.notificationResponse;
-    return launch?.didNotificationLaunchApp == true && r != null ? answerOf(r.id, r.actionId, r.input, r.payload) : null;
-  }
-
-  static String _payload(PushMessage m) => jsonEncode({'id': m.id, 'data': m.data});
-
-  static NotificationAnswer answerOf(int? id, String? actionId, String? input, String? payload) {
-    final map = payload == null || payload.isEmpty ? const {} : jsonDecode(payload) as Map;
-    final data = map['data'] is Map ? {for (final e in (map['data'] as Map).entries) '${e.key}': '${e.value}'} : const <String, String>{};
-    return NotificationAnswer(id: '${map['id'] ?? id}', actionId: (actionId ?? '').isEmpty ? null : actionId, input: input, data: data);
-  }
-  // show, keep, notify, cancel, clearShown as in step 3, building their details from the message (9.3)
-}
-```
-
-### 9.3 A message's details
-
-Build each notification's details from the `PushMessage`, so every field shows:
-
-| `PushMessage` | Android (`AndroidNotificationDetails`) | iOS (`DarwinNotificationDetails`) |
-| --- | --- | --- |
-| `image` (download an https one to a file first) | `styleInformation: BigPictureStyleInformation(FilePathAndroidBitmap(path))`, `largeIcon` | `attachments: [DarwinNotificationAttachment(path)]` |
-| `group` | `groupKey` | `threadIdentifier` |
-| `category` | `actions:` its `AndroidNotificationAction`s (`inputs: [AndroidNotificationActionInput(label:)]` for `input`, `showsUserInterface: opensApp`) | `categoryIdentifier` |
-| `channel` | the channel id | — |
-| `sound` | `RawResourceAndroidNotificationSound(sound)` (`res/raw`) | `sound` (a file in the app bundle) |
-| `badge` | `number` | `badgeNumber` |
-| `progress` | `showProgress`, `maxProgress`, `progress`, `indeterminate` | — (say it in the body) |
-| `ongoing` | `ongoing` (Android 14+ still lets users swipe it away) | — |
-| `expanded` | `BigTextStyleInformation(body)` | — (iOS expands by itself) |
-| `urgent` | a channel of its own made with `Importance.max` (a channel's importance can't change once made), `Priority.max` | `interruptionLevel: InterruptionLevel.timeSensitive` (with the Time Sensitive capability) |
-| `quiet` (from the kit) | `silent: true` | `presentBanner: false, presentSound: false, presentList: true` |
-
-### 9.4 A push while the app isn't in front
-
-- **iOS** shows a push itself, with its actions from `aps.category` and its image through the extension
-  (ios_setup.md §4).
-- **Android** shows only plain pushes by itself: one with actions or an image must come **data-only** (its `title` and
-  `body` in the data, with `category`, `image`, `group`...), and the app shows it from a background handler, registered
-  at launch:
-
-```dart
-@pragma('vm:entry-point')
-Future<void> pushInBackground(RemoteMessage m) async {
-  final message = PushMessage.fromData(id: m.messageId ?? '', title: m.data['title'], body: m.data['body'],
-      data: {for (final e in m.data.entries) e.key: '${e.value}'});
-  if (m.notification != null || message.silent) return; // the system showed a plain one itself
-  await LocalDisplayDelegate.showNow(message, categories: categories); // initialize the plugin, then show
-}
-
-FirebaseMessaging.onBackgroundMessage(pushInBackground); // at launch, before runApp
-```
-
-- A static handler's **class** needs `@pragma('vm:entry-point')` too, not only the method, or native code can't reach
-  it (`To access ... from native code, it must be annotated`).
-- On iOS a push's category and thread come in `aps`, not in the data: the messaging delegate adds them
-  (`RemoteMessage.category`, `threadId`) so the in-app notification offers the same actions.
-- The messaging delegate reads a push with `PushMessage.fromData` (title and body from the data when the push has no
-  notification part), so a push shows the same way while the app is open.
-
-### 9.5 What the server sends
+To another phone, the server sends to the tokens kept on its account (§3):
 
 ```json
 {"message": {
@@ -467,38 +112,43 @@ FirebaseMessaging.onBackgroundMessage(pushInBackground); // at launch, before ru
 }}
 ```
 
-Android gets it data-only (the app shows it, with its actions and image); iOS shows the `aps` part itself, with the
-category's actions and, through the extension, the image.
+Android gets it data-only (the app shows it, with its actions and image); iOS shows the `aps` part itself. A token the
+push service says is no longer registered can be deleted there.
 
-### 9.6 The app's own in-app notification
-
-The app's overlay gets the message (`InAppNotifications.inApp`): offer its actions with
-`InAppNotifications.category(message.category)` and answer one with `InAppNotifications.answer(actionId, input:)`, which goes to `onAction` like an answer on the
-notification and takes the in-app notification and its copy in the bar away. For a reply typed in the in-app notification, call
-`InAppNotifications.hold(true)` when its field is focused, so the in-app notification doesn't go while typing; an answer, a tap or a
-dismiss lets it go.
-
-Or use the package's `InAppNotificationView`, which does all of that and moves as Discord's (comes down fading in
-and growing, a touch past its place; held by a finger; dragged exactly with it; let go, it carries on out from where it
-is or springs back; goes up fading and shrinking), and change how it looks from the app: its
-`style` (`InAppNotificationStyle`: margins, padding, the card's decoration, text styles, image size and corners,
-gaps, button styles, the reply field's decoration, swipe direction, safe area), and builders that replace a part whole
-(`leading`, `content`, `trailing`, `actionBuilder`, `replyBuilder`, `container`).
-
-### 9.7 After an answer
-
-The kit takes an answered notification away (Android leaves one answered with a reply on screen). A background handler
-runs without the kit, so it does it itself, with the plugin's id from the answer:
+## 10. A tap opens its page
 
 ```dart
-@pragma('vm:entry-point')
-Future<void> answeredInBackground(NotificationResponse r) async {
-  if (r.id != null) await FlutterLocalNotificationsPlugin().cancel(id: r.id!);
-  await handleAction(LocalDisplayDelegate.answerOf(r.id, r.actionId, r.input, r.payload));
-  // Android holds one answered with a typed reply a moment and ignores a cancel made at once: again after.
-  if (r.id != null && r.input != null) {
-    await Future<void>.delayed(const Duration(milliseconds: 1500));
-    await FlutterLocalNotificationsPlugin().cancel(id: r.id!);
-  }
+void _openPushed() {
+  final data = InAppNotifications.take();      // {'page': 'chats', ...}
+  if (data == null) return;
+  final home = ModalRoute.of(context);
+  Navigator.of(context).popUntil((r) => r == home || r.isFirst); // close what is open over the tabs
+  selectTab(data['page']);                     // ignore a page this version doesn't have
 }
+// initState: _openPushed() for a push that started the app; then InAppNotifications.opened.addListener(_openPushed)
 ```
+
+## 11. Actions and replies
+
+The kinds of notification and their actions, and what the app does with an answer, are in
+[push_background.dart](../push_example/lib/push_background.dart) (`categories`, `onAction`): fixed in code, because
+an action answered while the app isn't running runs in a background isolate with none of the app's state. While the app
+runs, a screen can also listen to `InAppNotifications.actions`.
+
+An answer takes its notification away; a reply's text is in `input`, the notification's data in `data`.
+
+## 12. Its own look
+
+`InAppNotificationView` takes a `style` (`InAppNotificationStyle`: margins, padding, the card's decoration, text styles,
+image size and corners, gaps, button styles, the reply field's decoration, swipe direction, safe area) and builders
+that replace a part whole (`leading`, `content`, `trailing`, `actionBuilder`, `replyBuilder`, `container`). Or draw one
+entirely the app's own: offer its actions with `InAppNotifications.category(message.category)`, answer with
+`InAppNotifications.answer(actionId, input:)`, and `InAppNotifications.hold(true)` while a reply is typed.
+
+## 13. Check it works
+
+1. A local one: `await InAppNotifications.notify(id: 'test', title: 'Local works');` shows in the notification bar.
+2. A push: print this phone's token (`FirebaseMessaging.instance.getToken()`), then send to it from the Firebase console
+   (Messaging › New campaign › Send test message). In the background it shows in the notification bar; while open, as
+   `whileOpen` says; a tap opens its page (§10).
+3. An action: a push with `category` in its data shows its buttons; an answer reaches `onAction`.

@@ -29,7 +29,7 @@ class NotificationAction {
 }
 
 /// The actions a kind of notification offers ("chat": Reply; "request": Accept, Reject). Set once in
-/// `InAppNotifications.setup`: iOS must know them before any notification names them.
+/// `InAppNotifications.init`: iOS must know them before any notification names them.
 class NotificationCategory {
   const NotificationCategory({required this.id, required this.actions});
 

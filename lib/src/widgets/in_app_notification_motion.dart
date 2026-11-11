@@ -22,7 +22,6 @@ abstract final class InAppNotificationMotion {
   /// The curves made for each in-app notification's animation, once: a transition built again (its in-app notification
   /// rebuilt) reuses them rather than adding new ones to the animation each time. They go with it.
   static final _moves = Expando<(CurvedAnimation, CurvedAnimation)>();
-  static final _pops = Expando<(CurvedAnimation, CurvedAnimation)>();
 
   static Widget _move(Widget child, Animation<double> animation, InAppNotificationEdge edge) {
     final (move, fade) = _moves[animation] ??= (
@@ -39,23 +38,6 @@ abstract final class InAppNotificationMotion {
         opacity: fade,
         child: ScaleTransition(scale: Tween(begin: 0.92, end: 1.0).animate(move), alignment: edge.anchor, child: child),
       ),
-    );
-  }
-
-  /// A popup's coming and going: in place, growing from a little smaller and fading in, a touch past its size; back
-  /// out shrinking and fading.
-  static Widget pop(Widget child, Animation<double> animation) {
-    final (grow, fade) = _pops[animation] ??= (
-      CurvedAnimation(parent: animation, curve: arrive, reverseCurve: leave.flipped),
-      CurvedAnimation(
-        parent: animation,
-        curve: const Interval(0, 0.5, curve: Curves.easeOut),
-        reverseCurve: Curves.easeIn,
-      ),
-    );
-    return FadeTransition(
-      opacity: fade,
-      child: ScaleTransition(scale: Tween(begin: 0.86, end: 1.0).animate(grow), child: child),
     );
   }
 

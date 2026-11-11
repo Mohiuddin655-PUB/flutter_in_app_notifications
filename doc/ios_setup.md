@@ -41,8 +41,8 @@ open. The Flutter app delegate asks every plugin and the first answer wins, and 
 notification with the options set for pushes, which with `inApp` would hide a notification the app made itself
 completely. The plugin answers instead:
 
-- a push (it carries `gcm.message_id`): as `setForegroundNotificationPresentationOptions` says; with the in-app notification off
-  (the app shows its own) it still goes into the list, quietly;
+- a push (it carries `gcm.message_id`): as `setForegroundNotificationPresentationOptions` says; with the in-app
+  notification off (the app shows its own) it still goes into the list, quietly;
 - a notification made on the phone: as flutter_local_notifications asks for it (`notify(quiet:)` puts it into the list
   only).
 
@@ -50,7 +50,7 @@ Everything else (a tap, the settings link) goes on to the app delegate.
 
 - Don't add a plugin that takes the delegate for **every** notification (such as `awesome_notifications`).
 - Don't let flutter_local_notifications ask for the permission (`DarwinInitializationSettings(request...Permission:
-  false)`): the app asks when it is needed (app_setup.md step 6).
+  false)`): the app asks when it is needed ([app_setup.md](app_setup.md#7-the-permission)).
 
 ## 4. A push's image (Notification Service Extension)
 

@@ -31,9 +31,9 @@ dependencies {
 
 When the app has flutter_local_notifications, the package's own manifest brings in the `POST_NOTIFICATIONS` and
 `RECEIVE_BOOT_COMPLETED` permissions and that plugin's receivers (scheduled notifications, actions, after a restart;
-without them a scheduled notification's alarm goes off and nothing shows); the app adds nothing for them. An app
-without that plugin (the in-app notification alone) gets none of them. What the app may add is what the system uses for a push it
-shows itself (app in the background or closed):
+without them a scheduled notification's alarm goes off and nothing shows); the app adds nothing for them. An app without
+that plugin (the in-app notification alone) gets none of them. What the app may add is what the system uses for a push
+it shows itself (app in the background or closed):
 
 ```xml
 <application ...>
@@ -64,7 +64,7 @@ shows itself (app in the background or closed):
 | Background | the system shows it on the default channel | `messaging.tapped` |
 | Closed (swiped away) | the system shows it (FCM starts the app's process to deliver it) | `messaging.initial` at the next launch |
 | Force-stopped (Settings › Force stop) | **not delivered**, not even after reopening: Android's rule | — |
-| Permission off | nothing in the bar; the in-app in-app notification still shows while open | — |
+| Permission off | nothing in the bar; the in-app notification still shows while open | — |
 
 - Grant or revoke the permission while testing: `adb shell pm grant|revoke <package> android.permission.POST_NOTIFICATIONS`.
 - An emulator restored from a snapshot keeps an FCM token the server has dropped (`NotRegistered`): sign out and in

@@ -22,7 +22,7 @@ abstract interface class NotificationDisplayDelegate {
 
   /// A notification made on the phone, in the notification bar on every platform: now, or at [at] when given (a time
   /// already gone shows it now). The same [PushMessage.id] replaces one shown or waiting. [quiet]: into the bar without
-  /// popping up or sounding, as the app shows its own in-app notification for it. [at] is read by `setup(now:)`'s clock
+  /// popping up or sounding, as the app shows its own in-app notification for it. [at] is read by `init(now:)`'s clock
   /// (the server's, say); the phone's alarm goes by its own, so a display whose clocks differ moves it by the
   /// difference.
   Future<void> notify(PushMessage message, {DateTime? at, bool quiet = false});

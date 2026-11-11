@@ -6,7 +6,7 @@ import 'package:in_app_notifications/in_app_notifications.dart';
 /// The smallest place an app can draw [InAppNotifications.inApp] in, over its pages: the in-app notification comes in
 /// from [edge] as Discord's, goes after [showFor] (not while held: a finger on it, a reply typed), sits above the
 /// keyboard, and has its own Overlay so its reply field can be focused. A real app shows it where it shows its other
-/// overlays (an app shell's extension, say).
+/// overlays (with its other overlays).
 class InAppNotificationHost extends StatefulWidget {
   const InAppNotificationHost({super.key, required this.edge, required this.child, this.showFor = const Duration(seconds: 4)});
 

@@ -1,0 +1,21 @@
+name: push_example
+description: "Ready delegates for in_app_notifications, to copy into an app: Firebase Cloud Messaging, flutter_local_notifications, Firestore and shared_preferences."
+publish_to: none
+
+environment:
+  sdk: ^3.13.2
+  flutter: ">=1.17.0"
+
+dependencies:
+  cloud_firestore: ^6.0.0
+  firebase_core: ^4.0.0
+  firebase_messaging: ^16.0.0
+  flutter:
+    sdk: flutter
+  flutter_local_notifications: ^23.0.1
+  in_app_notifications:
+    path: ..
+  shared_preferences: ^2.5.6
+  timezone: ^0.11.2
+dev_dependencies:
+  flutter_lints: ^6.0.0

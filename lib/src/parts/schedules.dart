@@ -31,7 +31,7 @@ class Schedules {
     if (text != null && text.isNotEmpty) {
       for (final e in jsonDecode(text) as List) {
         final m = e as Map;
-        // Kept whole (its image, actions, sound, look); one kept by an earlier version has only its id, title, body
+        // Kept whole (its image, actions, sound); one kept by an earlier version has only its id, title, body
         // and data, read the same way.
         final message = PushMessage.fromJson(m);
         _pending[message.id] = (message: message, at: DateTime.fromMillisecondsSinceEpoch(m['at'] as int, isUtc: true));

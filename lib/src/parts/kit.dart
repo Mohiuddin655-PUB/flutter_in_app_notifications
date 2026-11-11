@@ -56,6 +56,7 @@ class Kit {
   Future<void> init() async {
     if (_ready) return;
     _ready = true;
+    await run(messaging.init, 'messaging init');
     await run(() => display.init(categories: banner.categories.values.toList()), 'display init');
     messaging.received.listen(_received);
     messaging.tapped.listen((message) => banner.open(message.data));

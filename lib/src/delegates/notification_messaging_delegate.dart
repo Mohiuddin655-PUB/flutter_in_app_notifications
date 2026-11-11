@@ -2,6 +2,10 @@ import '../models/push_message.dart';
 
 /// The push service, given by the app (Firebase Cloud Messaging, say).
 abstract interface class NotificationMessagingDelegate {
+  /// At `InAppNotifications.init`, first: what the push service needs before anything else (its handler for a push
+  /// while the app isn't in front, say).
+  Future<void> init();
+
   /// This phone's token now; null while it has none yet.
   Future<String?> token();
 

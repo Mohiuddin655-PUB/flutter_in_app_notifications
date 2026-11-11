@@ -2,12 +2,21 @@
 
 - **Breaking: the package no longer draws the app's overlays.** `InAppNotificationGate`, `BannerLook` (its toast,
   snackbar and popup), the lanes, and `show()`'s `showFor`, `edge` and `padding` are gone: the app draws
-  `InAppNotifications.inApp` where it shows its other overlays (an app shell's extension, say), places it and dismisses
+  `InAppNotifications.inApp` where it shows its other overlays, places it and dismisses
   it after its time unless `holding`. The package keeps what only it can do: when a notification shows in the app and
   when the phone shows it (`WhileOpen`), pushes, notifications made on the phone, schedules, the token, actions and
   replies, `inApp`, `holding`, `open`, `dismiss`, `answer` and `opened`, and the in-app notification itself
-  (`InAppNotificationView` with its drag, reply field, style and motion). `show(look:)` and `PushMessage.look` stay:
-  the name of the app's own look.
+  (`InAppNotificationView` with its drag, reply field, style and motion). `show(look:)`, `PushMessage.look`,
+  `NotificationKeys.look` and `InAppNotificationMotion.pop` are gone too: the package is for notifications only.
+- **Breaking: one call at launch.** `setup()` and `init()` are one, `await InAppNotifications.init(...)` with the
+  app's delegates (after Firebase is up); it is called once.
+- **Breaking:** `NotificationMessagingDelegate.init()`, called first by `InAppNotifications.init`: where the push
+  service sets what it needs first (its handler for a push while the app isn't in front), so the app doesn't.
+- `NotificationKeys.title` and `body`: a data-only push's title and body.
+- **Ready code** (`push_example`): the delegates for Firebase Cloud Messaging, flutter_local_notifications, Firestore
+  and shared_preferences, the background handlers and a `PushSetup.init()`, to copy into an app.
+- **Setup, A to Z** (`doc/setup.md`): every step, each a tap away from its details (`doc/app_setup.md`), and what
+  to add to `pubspec.yaml` (`doc/pubspec_setup.md`); the README links to them.
 - The example draws it in a small `InAppNotificationHost` of its own; the README and the app setup say how to show it,
   with a new picture of it.
 
