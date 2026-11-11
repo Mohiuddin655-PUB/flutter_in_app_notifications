@@ -7,6 +7,7 @@ topics: [notifications, push, fcm, token]
 
 environment:
   sdk: ^3.13.2
+  flutter: ">=1.17.0"
 
 screenshots:
   - description: The in-app notification with its actions
