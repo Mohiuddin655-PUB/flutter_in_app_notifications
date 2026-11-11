@@ -74,7 +74,7 @@ class InAppNotifications {
   /// `DateTime(2026, 11, 10, 10)` for 10am), or [after] a while (scheduled; it shows even when the app is closed).
   /// Times are read by `init(now:)`'s clock. While the app is open it shows as [WhileOpen] says, as a push does.
   /// [message] says how it shows (an image, a group, a category's actions, a sound, progress); [id], [title], [body]
-  /// and [data] are the short way for a plain one. False when it couldn't be made.
+  /// and [data] are the short way for a plain one, never given with it. False when it couldn't be made.
   static Future<bool> notify({
     String? id,
     String? title,
@@ -85,6 +85,7 @@ class InAppNotifications {
     Duration? after,
   }) {
     assert(message != null || id != null, 'notify needs an id or a message');
+    assert(message == null || (id == null && title == null && body == null && data.isEmpty), 'notify takes a message or its parts, not both');
     final shown = message ?? PushMessage(id: id!, title: title, body: body, data: data);
     final when = at ?? (after == null ? null : _k.now().add(after));
     if (when != null && when.isAfter(_k.now())) return _k.run(() => _k.schedules.add(shown, when), 'schedule');
@@ -101,9 +102,11 @@ class InAppNotifications {
 
   /// [message] inside the app ([inApp]), with nothing in the notification bar and no push: a message the app tells
   /// itself (a saved change, a match found). Works without [init]. Its actions and a tap work as any other's. [id],
-  /// [title], [body] and [data] are the short way for a plain one; [look] picks its design in the app's builder.
+  /// [title], [body] and [data] are the short way for a plain one, never given with [message]; [look] picks its design in
+  /// the app's builder.
   static void show({String? id, String? title, String? body, Map<String, String> data = const {}, String? look, PushMessage? message}) {
     assert(message != null || id != null || title != null, 'show needs a message, an id or a title');
+    assert(message == null || (id == null && title == null && body == null && data.isEmpty), 'show takes a message or its parts, not both');
     final shown = message ?? PushMessage(id: id ?? 'banner-${_shown++}', title: title, body: body, data: data);
     _b.present(look == null ? shown : shown.copyWith(data: {...shown.data, NotificationKeys.look: look}));
   }
