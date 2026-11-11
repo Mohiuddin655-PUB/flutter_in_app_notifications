@@ -5,7 +5,8 @@ import 'package:in_app_notifications/in_app_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// An account's push tokens on Firestore (`accounts/{uid}/devices/{token}`, where the server finds the phones to send
-/// to), and the one last saved from this phone in shared_preferences, so a launch writes nothing.
+/// to), and the one last saved from this phone in shared_preferences, so a launch writes nothing. Guard the path with
+/// security rules: only the account itself writes its own devices.
 class FirestoreTokenStoreDelegate implements TokenStoreDelegate {
   const FirestoreTokenStoreDelegate(this.prefs);
 

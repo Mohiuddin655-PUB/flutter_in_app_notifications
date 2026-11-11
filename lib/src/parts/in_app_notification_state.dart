@@ -17,8 +17,11 @@ class InAppNotificationState {
   /// The message showing in the in-app notification, until opened or dismissed; a new one replaces it.
   final inApp = ValueNotifier<PushMessage?>(null);
 
-  /// [message] in the in-app notification, replacing the one showing.
-  void present(PushMessage message) => inApp.value = message;
+  /// [message] in the in-app notification, replacing the one showing; what held that one lets go.
+  void present(PushMessage message) {
+    releaseAll();
+    inApp.value = message;
+  }
 
   /// The data of the one last tapped (an in-app notification or a notification), until taken.
   final opened = ValueNotifier<Map<String, String>?>(null);

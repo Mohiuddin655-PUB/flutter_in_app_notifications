@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:in_app_notifications/in_app_notifications.dart';
 
-import 'in_app_notification_host.dart';
+import 'notification_card.dart';
 
-/// The in-app notification of in_app_notifications on its own: no setup, no pushes. The app draws
-/// [InAppNotifications.inApp] where it shows its overlays ([InAppNotificationHost] here) and calls [InAppNotifications.show].
+/// The in-app notification of in_app_notifications on its own: no setup, no pushes. [InAppNotificationHost] shows it
+/// with the app's own design ([NotificationCard]), and the app calls [InAppNotifications.show].
 void main() {
   // Optional: what a kind of message offers.
   InAppNotifications.categories = const [
@@ -45,7 +45,7 @@ class ExampleApp extends StatefulWidget {
 }
 
 class _ExampleAppState extends State<ExampleApp> {
-  var _edge = InAppNotificationEdge.top;
+  var _top = true;
 
   @override
   Widget build(BuildContext context) {
@@ -53,17 +53,21 @@ class _ExampleAppState extends State<ExampleApp> {
       title: 'Banner example',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: const Color(0xFFFF704D)),
-      builder: (context, child) => InAppNotificationHost(edge: _edge, child: child!),
-      home: _Home(edge: _edge, onEdge: (edge) => setState(() => _edge = edge)),
+      builder: (context, child) => InAppNotificationHost(
+        builder: (context, data) => NotificationCard(data),
+        alignmentFor: (look) => look == 'black' ? Alignment.center : (_top ? Alignment.topCenter : Alignment.bottomCenter),
+        child: child!,
+      ),
+      home: _Home(top: _top, onTop: (top) => setState(() => _top = top)),
     );
   }
 }
 
 class _Home extends StatefulWidget {
-  const _Home({required this.edge, required this.onEdge});
+  const _Home({required this.top, required this.onTop});
 
-  final InAppNotificationEdge edge;
-  final ValueChanged<InAppNotificationEdge> onEdge;
+  final bool top;
+  final ValueChanged<bool> onTop;
 
   @override
   State<_Home> createState() => _HomeState();
@@ -89,13 +93,13 @@ class _HomeState extends State<_Home> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          SegmentedButton<InAppNotificationEdge>(
+          SegmentedButton<bool>(
             segments: const [
-              ButtonSegment(value: InAppNotificationEdge.top, label: Text('Top')),
-              ButtonSegment(value: InAppNotificationEdge.bottom, label: Text('Bottom')),
+              ButtonSegment(value: true, label: Text('Top')),
+              ButtonSegment(value: false, label: Text('Bottom')),
             ],
-            selected: {widget.edge},
-            onSelectionChanged: (s) => widget.onEdge(s.first),
+            selected: {widget.top},
+            onSelectionChanged: (s) => widget.onTop(s.first),
           ),
           const SizedBox(height: 16),
           FilledButton(
@@ -119,6 +123,10 @@ class _HomeState extends State<_Home> {
               message: const PushMessage(id: 'post', title: 'New post from Nadia', category: 'many'),
             ),
             child: const Text('Many actions'),
+          ),
+          FilledButton(
+            onPressed: () => InAppNotifications.show(title: 'A black page', body: 'Its own look', look: 'black'),
+            child: const Text('Look: black'),
           ),
           const SizedBox(height: 24),
           Text(_last, key: const Key('last'), style: Theme.of(context).textTheme.titleMedium),

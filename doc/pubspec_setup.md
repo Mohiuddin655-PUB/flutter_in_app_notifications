@@ -4,6 +4,7 @@
 
 ```yaml
 dependencies:
+  ...
   in_app_notifications: ^0.17.0         # the latest version (required)
   firebase_core: ^4.0.0                 # the latest version
   firebase_messaging: ^16.0.0           # the latest version (recommended; or another push service)

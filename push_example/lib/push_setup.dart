@@ -19,9 +19,9 @@ import 'push_background.dart';
 /// }
 /// ```
 abstract final class PushSetup {
-  /// Where a notification shows while the app is open: `bar` (the phone's), `inApp` (the app's, and quietly in the
-  /// bar), or `inAppOnly`.
-  static const whileOpen = WhileOpen.inApp;
+  /// Where a notification shows while the app is open: `bar` (the phone's, the default), `inAppAndBar` (inside the app, and
+  /// added to the bar without a sound or popup, to see later), or `inAppOnly` (only inside the app).
+  static const whileOpen = WhileOpen.inAppAndBar;
 
   static Future<void> init() async {
     await Firebase.initializeApp();

@@ -27,7 +27,7 @@ abstract interface class NotificationDisplayDelegate {
   /// difference.
   Future<void> notify(PushMessage message, {DateTime? at, bool quiet = false});
 
-  /// A push that came while the app is open, which the app shows itself (`WhileOpen.inApp`): kept in
+  /// A push that came while the app is open, which the app shows itself (`WhileOpen.inAppAndBar`): kept in
   /// the notification bar without popping up (Android), or nothing where the platform keeps it itself (iOS, its list).
   Future<void> keep(PushMessage message);
 

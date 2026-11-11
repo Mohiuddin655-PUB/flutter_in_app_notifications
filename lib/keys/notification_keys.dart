@@ -4,6 +4,9 @@ abstract final class NotificationKeys {
   static const title = 'title';
   static const body = 'body';
 
+  /// The look the app gave it, for `InAppNotificationHost`'s builder to pick its design.
+  static const look = 'look';
+
   /// An image's address (https) shown with it.
   static const image = 'image';
 

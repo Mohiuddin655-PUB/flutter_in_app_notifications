@@ -2,6 +2,7 @@ import 'dart:async' show unawaited;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 
+import '../keys/notification_keys.dart';
 import 'delegates/error_reporter.dart';
 import 'delegates/notification_action_handler.dart';
 import 'delegates/notification_display_delegate.dart';
@@ -16,9 +17,8 @@ import 'parts/in_app_notification_state.dart';
 import 'parts/kit.dart';
 import 'parts/native_actions.dart';
 
-/// Notifications in the app. The in-app notification works on its own: the app draws [inApp] where it shows its
-/// overlays (with `InAppNotificationView`), dismisses it after its time and calls [show];
-/// no init. Pushes and the phone's notifications need [init] once at launch with the app's delegates, [start]
+/// Notifications in the app. The in-app notification works on its own: `InAppNotificationHost` shows [inApp] with
+/// the app's own design, and the app calls [show]; no init. Pushes and the phone's notifications need [init] once at launch with the app's delegates, [start]
 /// at sign-in and [clear] before sign-out. A tapped one's data waits in [opened] until the app [take]s it.
 class InAppNotifications {
   const InAppNotifications._();
@@ -101,10 +101,11 @@ class InAppNotifications {
 
   /// [message] inside the app ([inApp]), with nothing in the notification bar and no push: a message the app tells
   /// itself (a saved change, a match found). Works without [init]. Its actions and a tap work as any other's. [id],
-  /// [title], [body] and [data] are the short way for a plain one.
-  static void show({String? id, String? title, String? body, Map<String, String> data = const {}, PushMessage? message}) {
+  /// [title], [body] and [data] are the short way for a plain one; [look] picks its design in the app's builder.
+  static void show({String? id, String? title, String? body, Map<String, String> data = const {}, String? look, PushMessage? message}) {
     assert(message != null || id != null || title != null, 'show needs a message, an id or a title');
-    _b.present(message ?? PushMessage(id: id ?? 'banner-${_shown++}', title: title, body: body, data: data));
+    final shown = message ?? PushMessage(id: id ?? 'banner-${_shown++}', title: title, body: body, data: data);
+    _b.present(look == null ? shown : shown.copyWith(data: {...shown.data, NotificationKeys.look: look}));
   }
 
   /// What each kind of message offers (its actions), for the in-app notification without [init]; [init]'s

@@ -1,5 +1,12 @@
 ## 0.17.0
 
+- **Breaking: the package draws nothing of the in-app notification.** `InAppNotificationView`,
+  `InAppNotificationStyle`, its drag, motion and reply field, and `InAppNotificationEdge` are gone. In their place
+  `InAppNotificationHost`: when it shows, how long (`showFor`, stopped while held), where (`alignmentFor`) and how it
+  comes and goes (`transitionBuilder`); its required `builder` draws it from an `InAppNotificationData` (the message,
+  `look`, `buttons`, `reply`, `remaining`, `open`, `dismiss`, `answer`, `hold`). `show(look:)` and a push's `look`
+  pick its design.
+- **Breaking:** `WhileOpen.inApp` is `WhileOpen.inAppAndBar`: it says it goes into the notification bar too.
 - **Breaking: the package no longer draws the app's overlays.** `InAppNotificationGate`, `BannerLook` (its toast,
   snackbar and popup), the lanes, and `show()`'s `showFor`, `edge` and `padding` are gone: the app draws
   `InAppNotifications.inApp` where it shows its other overlays, places it and dismisses
@@ -15,9 +22,9 @@
 - `NotificationKeys.title` and `body`: a data-only push's title and body.
 - **Ready code** (`push_example`): the delegates for Firebase Cloud Messaging, flutter_local_notifications, Firestore
   and shared_preferences, the background handlers and a `PushSetup.init()`, to copy into an app.
-- **Setup, A to Z** (`doc/setup.md`): every step, each a tap away from its details (`doc/app_setup.md`), and what
+- **Setup, A to Z** (`doc/setup.md`): every step, each a tap away from its details (`doc/usage.md`, the delegates' code), and what
   to add to `pubspec.yaml` (`doc/pubspec_setup.md`); the README links to them.
-- The example draws it in a small `InAppNotificationHost` of its own; the README and the app setup say how to show it,
+- The example draws it in a small `InAppNotificationHost` of its own; the README and the usage say how to show it,
   with a new picture of it.
 
 ## 0.16.0

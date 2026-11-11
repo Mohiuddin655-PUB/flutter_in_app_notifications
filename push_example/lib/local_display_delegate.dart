@@ -21,8 +21,8 @@ class LocalDisplayDelegate implements NotificationDisplayDelegate {
   final bool systemWhileOpen;
   final void Function(NotificationResponse response)? background;
 
-  /// The small icon in the bar: `res/drawable/ic_stat.png` (white on transparent), or the app's icon until it has one.
-  static const _icon = '@mipmap/ic_launcher';
+  /// The small icon in the bar: `res/drawable/ic_stat.png` (white on transparent), the same as AndroidManifest's.
+  static const _icon = 'ic_stat';
 
   static final _plugin = FlutterLocalNotificationsPlugin();
   static final _answers = StreamController<NotificationAnswer>.broadcast();
